@@ -32,7 +32,7 @@ redshift_dialect.sets("reserved_keywords").update(
 
 redshift_dialect.sets("bare_functions").clear()
 redshift_dialect.sets("bare_functions").update(
-    ["sysdate"]
+    ["current_date", "getdate", "sysdate"]
 )
 
 redshift_dialect.replace(WellKnownTextGeometrySegment=Nothing())
