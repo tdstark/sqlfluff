@@ -152,7 +152,7 @@ class TableAttributeSegment(BaseSegment):
     As specified in https://docs.aws.amazon.com/redshift/latest/dg/r_CREATE_TABLE_NEW.html
     """
 
-    type = "table_constraint_segment"
+    type = "table_attribute_segment"
 
     match_grammar = AnyNumberOf(
         Sequence("DISTSTYLE", OneOf("AUTO", "EVEN", "KEY", "ALL"), optional=True),
