@@ -252,7 +252,7 @@ class CreateTableStatementSegment(BaseSegment):
 
 @redshift_dialect.segment(replace=True)
 class InsertStatementSegment(BaseSegment):
-    """A `INSERT` statement.
+    """An `INSERT` statement.
 
     Redshift has two versions of insert statements:
         - https://docs.aws.amazon.com/redshift/latest/dg/r_INSERT_30.html
@@ -278,6 +278,127 @@ class InsertStatementSegment(BaseSegment):
                 ),
             ),
         ),
+    )
+
+@redshift_dialect.segment(replace=True)
+class GrantStatementSegment(BaseSegment):
+    """A `GRANT` statement.
+
+    As specified in: https://docs.aws.amazon.com/redshift/latest/dg/r_GRANT.html
+
+    """
+
+    type = "grant_statement"
+    match_grammar = Sequence(
+        "GRANT",
+        OneOf(
+            # Table
+            Sequence(
+                OneOf(
+                    "ALL",
+                    AnyNumberOf(
+                        "SELECT",
+                        "INSERT",
+                        "UPDATE",
+                        "DELETE",
+                        "DROP",
+                        "REFERENCES"
+                    )
+                ),
+                Ref.keyword("PRIVILEGES", optional=True),
+                "ON",
+                OneOf(
+                    Sequence(Ref.keyword("TABLE", optional=True), Delimited(Ref("TableReferenceSegment"))),
+                    Sequence("ALL", "TABLES", "IN", "SCHEMA", Delimited(Ref("SchemaReferenceSegment")))
+                ),
+                "TO",
+                Delimited(
+                    OneOf(  # This might not be needed
+                        Sequence(Ref("UsernameReferenceSegment"), Sequence("WITH", "GRANT", "OPTION", optional=True)),
+                        Sequence("GROUP", Ref("GroupReferenceSegment")),
+                        "PUBLIC"
+                    )
+                )
+            ),
+
+            # Database
+            Sequence(
+                OneOf(
+                    "ALL",
+                    AnyNumberOf(
+                        "CREATE",
+                        "TEMPORARY",
+                        "TEMP"
+                    )
+                ),
+                Ref.keyword("PRIVILEGES", optional=True),
+                "ON",
+                "DATABASE",
+                Delimited(Ref("DatabaseReferenceSegment")),
+                "TO",
+                Delimited(
+                    OneOf(  # This might not be needed
+                        Sequence(Ref("UsernameReferenceSegment"), Sequence("WITH", "GRANT", "OPTION", optional=True)),
+                        Sequence("GROUP", Ref("GroupReferenceSegment")),
+                        "PUBLIC"
+                    )
+                )
+            ),
+
+            # Schema
+            Sequence(
+                OneOf(
+                    "ALL",
+                    AnyNumberOf(
+                        "CREATE",
+                        "TEMPORARY",
+                        "TEMP"
+                    )
+                ),
+                Ref.keyword("PRIVILEGES", optional=True),
+                "ON",
+                "SCHEMA",
+                Delimited(Ref("SchemaReferenceSegment")),
+                "TO",
+                Delimited(
+                    OneOf(  # This might not be needed
+                        Sequence(Ref("UsernameReferenceSegment"), Sequence("WITH", "GRANT", "OPTION", optional=True)),
+                        Sequence("GROUP", Ref("GroupReferenceSegment")),
+                        "PUBLIC"
+                    )
+                )
+            ),
+
+            # Function
+            Sequence(
+                OneOf(
+                    "ALL",
+                    "EXECUTE"
+                    )
+                ),
+                Ref.keyword("PRIVILEGES", optional=True),
+                "ON",
+                "SCHEMA",
+                Delimited(Ref("FunctionReferenceSegment"),
+                Delimited(
+                    OneOf(  # This might not be needed
+                        Sequence(Ref("UsernameReferenceSegment"), Sequence("WITH", "GRANT", "OPTION", optional=True)),
+                        Sequence("GROUP", Ref("GroupReferenceSegment")),
+                        "PUBLIC"
+                  )
+              )
+
+            ),
+
+            # Procedure
+            Sequence(),
+
+            # Language
+            Sequence(),
+
+            # Column-level privileges
+            Sequence()
+        )
     )
 
 
