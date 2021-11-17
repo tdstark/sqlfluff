@@ -281,14 +281,14 @@ class InsertStatementSegment(BaseSegment):
     )
 
 @redshift_dialect.segment(replace=True)
-class GrantStatementSegment(BaseSegment):
+class AccessStatementSegment(BaseSegment):
     """A `GRANT` statement.
 
     As specified in: https://docs.aws.amazon.com/redshift/latest/dg/r_GRANT.html
 
     """
 
-    type = "grant_statement"
+    type = "access_statement"
     match_grammar = Sequence(
         "GRANT",
         OneOf(
@@ -314,8 +314,8 @@ class GrantStatementSegment(BaseSegment):
                 "TO",
                 Delimited(
                     OneOf(  # This might not be needed
-                        Sequence(Ref("UsernameReferenceSegment"), Sequence("WITH", "GRANT", "OPTION", optional=True)),
-                        Sequence("GROUP", Ref("GroupReferenceSegment")),
+                        Sequence(Ref("NakedIdentifierSegment"), Sequence("WITH", "GRANT", "OPTION", optional=True)),
+                        Sequence("GROUP", Ref("NakedIdentifierSegment")),
                         "PUBLIC"
                     )
                 )
@@ -338,8 +338,8 @@ class GrantStatementSegment(BaseSegment):
                 "TO",
                 Delimited(
                     OneOf(  # This might not be needed
-                        Sequence(Ref("UsernameReferenceSegment"), Sequence("WITH", "GRANT", "OPTION", optional=True)),
-                        Sequence("GROUP", Ref("GroupReferenceSegment")),
+                        Sequence(Ref("NakedIdentifierSegment"), Sequence("WITH", "GRANT", "OPTION", optional=True)),
+                        Sequence("GROUP", Ref("NakedIdentifierSegment")),
                         "PUBLIC"
                     )
                 )
@@ -362,8 +362,8 @@ class GrantStatementSegment(BaseSegment):
                 "TO",
                 Delimited(
                     OneOf(  # This might not be needed
-                        Sequence(Ref("UsernameReferenceSegment"), Sequence("WITH", "GRANT", "OPTION", optional=True)),
-                        Sequence("GROUP", Ref("GroupReferenceSegment")),
+                        Sequence(Ref("NakedIdentifierSegment"), Sequence("WITH", "GRANT", "OPTION", optional=True)),
+                        Sequence("GROUP", Ref("NakedIdentifierSegment")),
                         "PUBLIC"
                     )
                 )
@@ -382,21 +382,77 @@ class GrantStatementSegment(BaseSegment):
                 Delimited(Ref("FunctionReferenceSegment"),
                 Delimited(
                     OneOf(  # This might not be needed
-                        Sequence(Ref("UsernameReferenceSegment"), Sequence("WITH", "GRANT", "OPTION", optional=True)),
-                        Sequence("GROUP", Ref("GroupReferenceSegment")),
+                        Sequence(Ref("NakedIdentifierSegment"), Sequence("WITH", "GRANT", "OPTION", optional=True)),
+                        Sequence("GROUP", Ref("NakedIdentifierSegment")),
                         "PUBLIC"
-                  )
-              )
+                    )
+                )
 
             ),
 
             # Procedure
-            Sequence(),
+            Sequence(
+                OneOf(
+                    "EXECUTE",
+                    "ALL"
+                ),
+                Ref.keyword("PRIVILEGES", optional=True),
+                "ON",
+                OneOf(
+                    Sequence("PROCEDURE", Bracketed()),
+                    Sequence("ALL", "PROCEDURES", "IN", "SCHEMA", Delimited(Ref("SchemaReferenceSegment")))
+                ),
+                Delimited(
+                    OneOf(  # This might not be needed
+                        Sequence(Ref("NakedIdentifierSegment"), Sequence("WITH", "GRANT", "OPTION", optional=True)),
+                        Sequence("GROUP", Ref("NakedIdentifierSegment")),
+                        "PUBLIC"
+                    )
+                )
+            ),
 
             # Language
-            Sequence(),
+            Sequence(
+                "USAGE",
+                "ON",
+                "LANGUAGE",
+                Delimited(Ref("LanguageReferenceSegment")),
+                "TO",
+                Delimited(
+                    OneOf(  # This might not be needed
+                        Sequence(Ref("NakedIdentifierSegment"), Sequence("WITH", "GRANT", "OPTION", optional=True)),
+                        Sequence("GROUP", Ref("NakedIdentifierSegment")),
+                        "PUBLIC"
+                    )
+                )
+            ),
 
             # Column-level privileges
+            Sequence(
+                OneOf(
+                    "SELECT",
+                    "UPDATE",
+                    "ALL"
+                ),
+                Ref.keyword("PRIVILEGES", optional=True),
+                Bracketed(Delimited(Ref("ColumnReferenceSegment"))),
+                "ON",
+                Ref.keyword("TABLE", optional=True),
+                Delimited(Ref("TableReferenceSegment")),
+                "TO",
+                Delimited(
+                    OneOf(  # This might not be needed
+                        Ref("NakedIdentifierSegment"),
+                        Sequence("GROUP", Ref("NakedIdentifierSegment")),
+                        "PUBLIC"
+                    )
+                )
+            ),
+
+            # Assumerole
+            Sequence(),
+
+            # Redshift Spectrum
             Sequence()
         )
     )
