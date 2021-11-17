@@ -280,6 +280,57 @@ class InsertStatementSegment(BaseSegment):
         ),
     )
 
+@redshift_dialect.segment()
+class CreateUserSegment(BaseSegment):
+    """ An `CREATE USER` Statement.
+
+    As specified in: https://docs.aws.amazon.com/redshift/latest/dg/r_CREATE_USER.html
+    """
+
+    type = "create_user_statement"
+
+    match_grammar = Sequence(
+        "CREATE",
+        "USER",
+        Ref.keyword("WITH", optional=True),
+        "PASSWORD",
+        OneOf(
+            Ref("QuotedLiteralSegment"),
+            "DISABLE"
+        ),
+        AnyNumberOf(
+            "CREATEDB",
+            "NOCREATEDB",
+            "CREATEUSER",
+            "NOCREATEUSER",
+            Sequence("SYSLOG", "ACCESS", OneOf("RESTRICTED", "UNRESTRICTED")),
+            Sequence("IN", "GROUP", Delimited(Ref("NakedIdentifierSegment"))),
+            Sequence("VALID", "UNTIL", Ref("QuotedLiteralSegment")),
+            Sequence("CONNECTION", "LIMIT", OneOf(Ref("NumericLiteralSegment"), "UNLIMITED")),
+            Sequence("SESSION", "TIMEOUT", Ref("NumericLiteralSegment"))
+        )
+    )
+
+@redshift_dialect.segment()
+class CreateGroupSegment(BaseSegment):
+    """ An `CREATE GROUP` Statement.
+
+    As specified in: https://docs.aws.amazon.com/redshift/latest/dg/r_CREATE_GROUP.html
+    """
+
+    type = "create_group_statement"
+
+    match_grammar = Sequence(
+        "CREATE",
+        "GROUP",
+        Ref("NakedIdentifierSegment"),
+        Sequence(
+            Ref.keyword("WITH", optional=True),
+            "USER",
+            Delimited(Ref("NakedIdentifierSegment")),
+            optional=True
+        )
+    )
 
 # Adding Redshift specific statements
 @redshift_dialect.segment(replace=True)
@@ -290,6 +341,8 @@ class StatementSegment(BaseSegment):
 
     parse_grammar = redshift_dialect.get_segment("StatementSegment").parse_grammar.copy(
         insert=[
+            Ref("CreateUserSegment"),
+            Ref("CreateGroupSegment"),
             Ref("TableAttributeSegment"),
             Ref("ColumnAttributeSegment"),
             Ref("ColumnEncodingSegment"),
