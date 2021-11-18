@@ -295,11 +295,7 @@ class CreateUserSegment(BaseSegment):
         "USER",
         Ref("SingleIdentifierGrammar"),
         Ref.keyword("WITH", optional=True),
-        "PASSWORD",
-        OneOf(
-            Ref("QuotedLiteralSegment"),
-            "DISABLE"
-        ),
+        Sequence("PASSWORD", OneOf(Ref("QuotedLiteralSegment"), "DISABLE")),
         AnyNumberOf(
             "CREATEDB",
             "NOCREATEDB",
