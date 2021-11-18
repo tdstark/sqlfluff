@@ -14,6 +14,7 @@ from sqlfluff.core.parser import (
     Delimited,
     Nothing,
     OptionallyBracketed,
+    StartsWith
 )
 
 from sqlfluff.core.dialects import load_raw_dialect
@@ -292,6 +293,7 @@ class CreateUserSegment(BaseSegment):
     match_grammar = Sequence(
         "CREATE",
         "USER",
+        Ref("SingleIdentifierGrammar"),
         Ref.keyword("WITH", optional=True),
         "PASSWORD",
         OneOf(
@@ -304,7 +306,7 @@ class CreateUserSegment(BaseSegment):
             "CREATEUSER",
             "NOCREATEUSER",
             Sequence("SYSLOG", "ACCESS", OneOf("RESTRICTED", "UNRESTRICTED")),
-            Sequence("IN", "GROUP", Delimited(Ref("NakedIdentifierSegment"))),
+            Sequence("IN", "GROUP", Delimited(Ref("SingleIdentifierGrammar"))),
             Sequence("VALID", "UNTIL", Ref("QuotedLiteralSegment")),
             Sequence("CONNECTION", "LIMIT", OneOf(Ref("NumericLiteralSegment"), "UNLIMITED")),
             Sequence("SESSION", "TIMEOUT", Ref("NumericLiteralSegment"))
@@ -323,11 +325,11 @@ class CreateGroupSegment(BaseSegment):
     match_grammar = Sequence(
         "CREATE",
         "GROUP",
-        Ref("NakedIdentifierSegment"),
+        Ref("SingleIdentifierGrammar"),
         Sequence(
             Ref.keyword("WITH", optional=True),
             "USER",
-            Delimited(Ref("NakedIdentifierSegment")),
+            Delimited(Ref("SingleIdentifierGrammar")),
             optional=True
         )
     )
