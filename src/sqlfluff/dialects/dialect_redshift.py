@@ -368,17 +368,19 @@ class AccessStatementSegment(BaseSegment):
                 )
             ),
 
-            # Function
+            # Function/Procedure
             Sequence(
                 OneOf(
                     "ALL",
                     "EXECUTE"
-                    )
                 ),
                 Ref.keyword("PRIVILEGES", optional=True),
                 "ON",
-                "SCHEMA",
-                Delimited(Ref("FunctionSegment"),
+                OneOf(
+                    Sequence(OneOf("FUNCTION", "PROCEDURE"), Delimited(Ref("FunctionSegment"))),
+                    Sequence("ALL", OneOf("FUNCTIONS", "PROCEDURES"), "IN", "SCHEMA", Delimited(Ref("SchemaReferenceSegment")))
+                ),
+                "TO",
                 Delimited(
                     OneOf(  # This might not be needed
                         Sequence(Ref("NakedIdentifierSegment"), Sequence("WITH", "GRANT", "OPTION", optional=True)),
@@ -387,27 +389,6 @@ class AccessStatementSegment(BaseSegment):
                     )
                 )
 
-            ),
-
-            # Procedure
-            Sequence(
-                OneOf(
-                    "EXECUTE",
-                    "ALL"
-                ),
-                Ref.keyword("PRIVILEGES", optional=True),
-                "ON",
-                OneOf(
-                    Sequence("PROCEDURE", Bracketed()),
-                    Sequence("ALL", "PROCEDURES", "IN", "SCHEMA", Delimited(Ref("SchemaReferenceSegment")))
-                ),
-                Delimited(
-                    OneOf(  # This might not be needed
-                        Sequence(Ref("NakedIdentifierSegment"), Sequence("WITH", "GRANT", "OPTION", optional=True)),
-                        Sequence("GROUP", Ref("NakedIdentifierSegment")),
-                        "PUBLIC"
-                    )
-                )
             ),
 
             # Language
