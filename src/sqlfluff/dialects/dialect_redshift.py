@@ -430,7 +430,35 @@ class AccessStatementSegment(BaseSegment):
             ),
 
             # Assumerole
-            Sequence(),
+            Sequence(
+                "ASSUMEROLE",
+                "ON",
+                OneOf(
+                    Delimited(Ref("NakedIdentifierSegment")),
+                    "Default",
+                    "ALL"
+                ),
+                "TO",
+                Delimited(
+                    OneOf(  # This might not be needed
+                        Ref("NakedIdentifierSegment"),
+                        Sequence("GROUP", Ref("NakedIdentifierSegment")),
+                        "PUBLIC"
+                    )
+                ),
+                "FOR",
+                Delimited(
+                    OneOf(
+                        "ALL",
+                        "COPY",
+                        "UNLOAD",
+                        "EXTERNAL",
+                        "FUNCTION",
+                        "CREATE",
+                        "MODEL"
+                    )
+                )
+            ),
 
             # Redshift Spectrum
             Sequence()
