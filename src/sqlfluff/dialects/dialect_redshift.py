@@ -351,8 +351,7 @@ class AccessStatementSegment(BaseSegment):
                     "ALL",
                     AnyNumberOf(
                         "CREATE",
-                        "TEMPORARY",
-                        "TEMP"
+                        "USAGE",
                     )
                 ),
                 Ref.keyword("PRIVILEGES", optional=True),
@@ -416,7 +415,7 @@ class AccessStatementSegment(BaseSegment):
                 "USAGE",
                 "ON",
                 "LANGUAGE",
-                Delimited(Ref("LanguageReferenceSegment")),
+                Delimited("plpythonu", "sql"),
                 "TO",
                 Delimited(
                     OneOf(  # This might not be needed
