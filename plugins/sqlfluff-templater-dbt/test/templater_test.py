@@ -1,12 +1,15 @@
 """Tests for the dbt templater."""
 
+import glob
 import os
 import pytest
 import logging
 from pathlib import Path
 
+
 from sqlfluff.core import FluffConfig, Lexer, Linter
 from sqlfluff.core.errors import SQLTemplaterSkipFile
+from sqlfluff_templater_dbt.templater import DBT_VERSION_TUPLE
 from test.fixtures.dbt.templater import (  # noqa: F401
     DBT_FLUFF_CONFIG,
     dbt_templater,
@@ -69,10 +72,30 @@ def test__templater_dbt_templating_result(
         fname=os.path.join(project_dir, "models/my_new_project/", fname),
         config=FluffConfig(configs=DBT_FLUFF_CONFIG),
     )
-    assert (
-        str(templated_file)
-        == open("plugins/sqlfluff-templater-dbt/test/fixtures/dbt/" + fname).read()
+    template_output_folder_path = Path(
+        "plugins/sqlfluff-templater-dbt/test/fixtures/dbt/templated_output/"
     )
+    fixture_path = _get_fixture_path(template_output_folder_path, fname)
+    assert str(templated_file) == fixture_path.read_text()
+
+
+def _get_fixture_path(template_output_folder_path, fname):
+    fixture_path: Path = template_output_folder_path / fname  # Default fixture location
+    # Is there a version-specific version of the fixture file?
+    dbt_version_specific_fixture_folder = {(1, 0): "dbt_utils_0.8.0"}.get(
+        DBT_VERSION_TUPLE
+    )
+    if dbt_version_specific_fixture_folder:
+        # Maybe. Determine where it would exist.
+        version_specific_path = (
+            Path(template_output_folder_path)
+            / dbt_version_specific_fixture_folder
+            / fname
+        )
+        if version_specific_path.is_file():
+            # Ok, it exists. Use this path instead.
+            fixture_path = version_specific_path
+    return fixture_path
 
 
 @pytest.mark.parametrize(
@@ -218,22 +241,27 @@ def test__dbt_templated_models_do_not_raise_lint_error(
     assert len(violations) == 0
 
 
-def test__dbt_templated_models_fix_does_not_corrupt_file(project_dir):  # noqa: F811
+@pytest.mark.parametrize(
+    "path", ["models/my_new_project/issue_1608.sql", "snapshots/issue_1771.sql"]
+)
+def test__dbt_templated_models_fix_does_not_corrupt_file(
+    project_dir, path  # noqa: F811
+):
     """Test fix for issue 1608. Previously "sqlfluff fix" corrupted the file."""
+    for fsp in glob.glob(os.path.join(project_dir, "snapshots", "*FIXED.sql")):
+        os.remove(fsp)
     lntr = Linter(config=FluffConfig(configs=DBT_FLUFF_CONFIG))
-    lnt = lntr.lint_path(
-        os.path.join(project_dir, "models/my_new_project/issue_1608.sql"), fix=True
-    )
-    lnt.persist_changes(fixed_file_suffix="FIXED")
-    with open(
-        os.path.join(project_dir, "models/my_new_project/issue_1608.sql.after")
-    ) as f:
-        comp_buff = f.read()
-    with open(
-        os.path.join(project_dir, "models/my_new_project/issue_1608FIXED.sql")
-    ) as f:
-        fixed_buff = f.read()
-    assert fixed_buff == comp_buff
+    lnt = lntr.lint_path(os.path.join(project_dir, path), fix=True)
+    try:
+        lnt.persist_changes(fixed_file_suffix="FIXED")
+        with open(os.path.join(project_dir, path + ".after")) as f:
+            comp_buff = f.read()
+        with open(os.path.join(project_dir, path.replace(".sql", "FIXED.sql"))) as f:
+            fixed_buff = f.read()
+        assert fixed_buff == comp_buff
+    finally:
+        for fsp in glob.glob(os.path.join(project_dir, "snapshots", "*FIXED.sql")):
+            os.remove(fsp)
 
 
 def test__templater_dbt_templating_absolute_path(
@@ -260,7 +288,6 @@ def test__templater_dbt_templating_absolute_path(
             "dbt compilation error on file 'models/my_new_project/compiler_error.sql', "
             "Unexpected end of template. Jinja was looking for the following tags: 'endfor'",
         ),
-        ("exception_connect_database.sql", "dbt tried to connect to the database"),
     ],
 )
 def test__templater_dbt_handle_exceptions(
@@ -288,6 +315,49 @@ def test__templater_dbt_handle_exceptions(
     assert violations
     # NB: Replace slashes to deal with different plaform paths being returned.
     assert violations[0].desc().replace("\\", "/").startswith(exception_msg)
+
+
+def test__templater_dbt_handle_database_connection_failure(
+    project_dir, dbt_templater  # noqa: F811
+):
+    """Test the result of a failed database connection."""
+    from dbt.adapters.factory import get_adapter
+
+    src_fpath = "plugins/sqlfluff-templater-dbt/test/fixtures/dbt/error_models/exception_connect_database.sql"
+    target_fpath = os.path.abspath(
+        os.path.join(
+            project_dir, "models/my_new_project/exception_connect_database.sql"
+        )
+    )
+    # We move the file that throws an error in and out of the project directory
+    # as dbt throws an error if a node fails to parse while computing the DAG
+    os.rename(src_fpath, target_fpath)
+    try:
+        _, violations = dbt_templater.process(
+            in_str="",
+            fname=target_fpath,
+            config=FluffConfig(configs=DBT_FLUFF_CONFIG),
+        )
+    except Exception as e:
+        if DBT_VERSION_TUPLE >= (1, 0):
+            # In dbt 1.0.0, connection failures raise an exception
+            assert str(e).startswith(
+                "Runtime Error\n  connection never acquired for thread"
+            )
+        else:
+            raise (e)
+    finally:
+        get_adapter(dbt_templater.dbt_config).connections.release()
+        os.rename(target_fpath, src_fpath)
+    if DBT_VERSION_TUPLE < (1, 0):
+        assert violations
+        # NB: Replace slashes to deal with different plaform paths being returned.
+        assert (
+            violations[0]
+            .desc()
+            .replace("\\", "/")
+            .startswith("dbt tried to connect to the database")
+        )
 
 
 def test__project_dir_does_not_exist_error(dbt_templater, caplog):  # noqa: F811

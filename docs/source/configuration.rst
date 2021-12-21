@@ -154,6 +154,13 @@ In order to parse these queries is then necessary to replace these
 placeholders with sample values, and this is done with the placeholder
 templater.
 
+Placeholder templating can be enabled in the config using:
+
+.. code-block:: cfg
+
+    [sqlfluff]
+    templater = placeholder
+
 A few common styles are supported:
 
 colon
@@ -177,11 +184,14 @@ numeric_dollar
 percent
  WHERE bla = %s
 
-these can be configured by setting param_style to the names above
+ampersand
+ WHERE bla = &s or WHERE bla = &{s} or USE DATABASE MARKETING_{ENV}
+
+These can be configured by setting `param_style` to the names above:
 
 .. code-block:: cfg
 
-    [sqlfluff:templater:placeholder:context]
+    [sqlfluff:templater:placeholder]
     param_style=colon
     my_name='john'
 
@@ -190,16 +200,27 @@ above. Notice that the value needs to be escaped as it will be replaced as a
 string during parsing.
 
 When parameters are positional, like `question_mark`, then their name is
-simply the order in which they appear, starting by `1`.
+simply the order in which they appear, starting with `1`.
+
+.. code-block:: cfg
+
+    [sqlfluff:templater:placeholder]
+    param_style=question_mark
+    1='john'
 
 In case you need a parameter style different from the ones above, you can pass
 a custom regex.
 
 .. code-block:: cfg
 
-    [sqlfluff:templater:placeholder:context]
-    param_regex='__(?P<param_name>[\w_]+)__'
+    [sqlfluff:templater:placeholder]
+    param_regex=__(?P<param_name>[\w_]+)__
     my_name='john'
+
+N.B. quotes around `param_regex` in the config are
+interpreted literally by the templater.
+e.g. `param_regex='__(?P<param_name>[\w_]+)__'` matches
+`'__some_param__'` not `__some_param__`
 
 the named parameter `param_name` will be used as the key to replace, if
 missing, the parameter is assumed to be positional and numbers are used insead.
@@ -371,6 +392,37 @@ to use them for templated. In the above example, you might define a file at
         return "GROUP BY 1,2"
 
 
+If an `__init__.py` is detected, it will be loaded alongside any modules and
+submodules found within the library path.
+
+.. code-block:: jinja
+
+   SELECT
+      {{ custom_sum('foo', 'bar') }},
+      {{ foo.bar.another_sum('foo', 'bar') }}
+   FROM
+      baz
+
+`sqlfluff_libs/__init__.py`:
+
+.. code-block:: python
+
+    def custom_sum(a: str, b: str) -> str:
+        return a + b
+
+`sqlfluff_libs/foo/__init__.py`:
+
+.. code-block:: python
+
+    # empty file
+
+`sqlfluff_libs/foo/bar.py`:
+
+.. code-block:: python
+
+     def another_sum(a: str, b: str) -> str:
+        return a + b
+
 dbt Project Configuration
 -------------------------
 
@@ -406,10 +458,13 @@ Installation & Configuration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In order to get started using *SQLFluff* with a dbt project you will
-first need to install the :code:`sqlfluff-templater-dbt` package using
+first need to install the relevant `dbt adapter`_ for your dialect
+and the :code:`sqlfluff-templater-dbt` package using
 your package manager of choice (e.g.
-:code:`pip install sqlfluff-templater-dbt`) and then will need the
+:code:`pip install dbt-postgres sqlfluff-templater-dbt`) and then will need the
 following configuration:
+
+.. _`dbt adapter`: https://docs.getdbt.com/docs/available-adapters
 
 In *.sqlfluff*:
 
@@ -423,7 +478,10 @@ In *.sqlfluffignore*:
 .. code-block::
 
     target/
+    # dbt <1.0.0
     dbt_modules/
+    # dbt >=1.0.0
+    dbt_packages/
     macros/
 
 You can set the dbt project directory, profiles directory and profile with:
@@ -434,6 +492,14 @@ You can set the dbt project directory, profiles directory and profile with:
     project_dir = <relative or absolute path to dbt_project directory>
     profiles_dir = <relative or absolute path to the directory that contains the profiles.yml file>
     profile = <dbt profile>
+
+.. note::
+
+    If the `profiles_dir` setting is omitted, SQLFluff will look for the profile
+    in the default location, which varies by operating system. On Unix-like
+    operating systems (e.g. Linux or macOS), the default profile directory is
+    `~/.dbt/`. On Windows, you can determine your default profile directory by
+    running `dbt debug --config-dir`.
 
 Known Caveats
 ^^^^^^^^^^^^^

@@ -101,8 +101,7 @@ class Rule_L037(BaseRule):
                 if not col_info.order:
                     # Since ASC is default in SQL, add in ASC for fix
                     lint_fixes.append(
-                        LintFix(
-                            "create",
+                        LintFix.create_before(
                             col_info.separator,
                             [WhitespaceSegment(), KeywordSegment("ASC")],
                         )

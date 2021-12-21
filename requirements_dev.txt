@@ -12,8 +12,11 @@ hypothesis
 pytest
 pytest-cov
 pytest-sugar
+pytest-xdist
 # MyPy
 mypy
-typing_extensions
 types-toml
 types-pkg_resources
+types-chardet
+# Requests is required for the util script
+requests

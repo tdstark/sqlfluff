@@ -85,8 +85,12 @@ ansi_dialect.set_lexer_matchers(
         RegexLexer("back_quote", r"`[^`]*`", CodeSegment),
         # See https://www.geeksforgeeks.org/postgresql-dollar-quoted-string-constants/
         RegexLexer("dollar_quote", r"\$(\w*)\$[^\1]*?\$\1\$", CodeSegment),
+        # Numeric literal matches integers, decimals, and exponential formats,
+        # with a positve lookahead assertion to check it is not part of a naked identifier.
         RegexLexer(
-            "numeric_literal", r"(\d+(\.\d+)?|\.\d+)([eE][+-]?\d+)?", CodeSegment
+            "numeric_literal",
+            r"(?>\d+(\.\d+)?|\.\d+)([eE][+-]?\d+)?(?=\b)",
+            CodeSegment,
         ),
         RegexLexer("not_equal", r"!=|<>", CodeSegment),
         RegexLexer("like_operator", r"!?~~?\*?", CodeSegment),
@@ -445,6 +449,7 @@ ansi_dialect.add(
         "WINDOW",
         Ref("SetOperatorSegment"),
         Ref("WithNoSchemaBindingClauseSegment"),
+        Ref("WithDataClauseSegment"),
     ),
     WhereClauseTerminatorGrammar=OneOf(
         "LIMIT",
@@ -470,8 +475,8 @@ ansi_dialect.add(
     BaseExpressionElementGrammar=OneOf(
         Ref("LiteralGrammar"),
         Ref("BareFunctionSegment"),
-        Ref("FunctionSegment"),
         Ref("IntervalExpressionSegment"),
+        Ref("FunctionSegment"),
         Ref("ColumnReferenceSegment"),
         Ref("ExpressionSegment"),
     ),
@@ -481,6 +486,13 @@ ansi_dialect.add(
     FrameClauseUnitGrammar=OneOf("ROWS", "RANGE"),
     # It's as a sequence to allow to parametrize that in Postgres dialect with LATERAL
     JoinKeywords=Sequence("JOIN"),
+    TableConstraintReferenceOptionGrammar=OneOf(
+        "RESTRICT",
+        "CASCADE",
+        Sequence("SET", "NULL"),
+        Sequence("NO", "ACTION"),
+        Sequence("SET", "DEFAULT"),
+    ),
 )
 
 
@@ -497,7 +509,7 @@ class FileSegment(BaseFileSegment):
     # going straight into instantiating it directly usually.
     parse_grammar = Delimited(
         Ref("StatementSegment"),
-        delimiter=Ref("DelimiterSegment"),
+        delimiter=AnyNumberOf(Ref("DelimiterSegment"), min_times=1),
         allow_gaps=True,
         allow_trailing=True,
     )
@@ -869,9 +881,17 @@ ansi_dialect.add(
         Sequence(Ref.keyword("SEPARATOR"), Ref("LiteralGrammar")),
         # like a function call: POSITION ( 'QL' IN 'SQL')
         Sequence(
-            OneOf(Ref("QuotedLiteralSegment"), Ref("SingleIdentifierGrammar")),
+            OneOf(
+                Ref("QuotedLiteralSegment"),
+                Ref("SingleIdentifierGrammar"),
+                Ref("ColumnReferenceSegment"),
+            ),
             "IN",
-            OneOf(Ref("QuotedLiteralSegment"), Ref("SingleIdentifierGrammar")),
+            OneOf(
+                Ref("QuotedLiteralSegment"),
+                Ref("SingleIdentifierGrammar"),
+                Ref("ColumnReferenceSegment"),
+            ),
         ),
         Sequence(OneOf("IGNORE", "RESPECT"), "NULLS"),
     ),
@@ -1859,6 +1879,7 @@ class UnorderedSelectStatementSegment(BaseSegment):
         terminator=OneOf(
             Ref("SetOperatorSegment"),
             Ref("WithNoSchemaBindingClauseSegment"),
+            Ref("WithDataClauseSegment"),
             Ref("OrderByClauseSegment"),
             Ref("LimitClauseSegment"),
             Ref("NamedWindowSegment"),
@@ -1893,7 +1914,9 @@ class SelectStatementSegment(BaseSegment):
         # here.
         Ref("SelectClauseSegment"),
         terminator=OneOf(
-            Ref("SetOperatorSegment"), Ref("WithNoSchemaBindingClauseSegment")
+            Ref("SetOperatorSegment"),
+            Ref("WithNoSchemaBindingClauseSegment"),
+            Ref("WithDataClauseSegment"),
         ),
         enforce_whitespace_preceding_terminator=True,
     )
@@ -2028,7 +2051,7 @@ class SetExpressionSegment(BaseSegment):
 
 @ansi_dialect.segment()
 class InsertStatementSegment(BaseSegment):
-    """A `INSERT` statement."""
+    """An `INSERT` statement."""
 
     type = "insert_statement"
     match_grammar = StartsWith("INSERT")
@@ -2133,6 +2156,7 @@ class TableConstraintSegment(BaseSegment):
     """A table constraint, e.g. for CREATE TABLE."""
 
     type = "table_constraint_segment"
+
     # Later add support for CHECK constraint, others?
     # e.g. CONSTRAINT constraint_1 PRIMARY KEY(column_1)
     match_grammar = Sequence(
@@ -2161,7 +2185,20 @@ class TableConstraintSegment(BaseSegment):
                 # Foreign columns making up FOREIGN KEY constraint
                 Ref("BracketedColumnReferenceListGrammar"),
                 # Later add support for [MATCH FULL/PARTIAL/SIMPLE] ?
-                # Later add support for [ ON DELETE/UPDATE action ] ?
+                AnyNumberOf(
+                    # ON DELETE clause, e.g. ON DELETE NO ACTION
+                    Sequence(
+                        "ON",
+                        "DELETE",
+                        Ref("TableConstraintReferenceOptionGrammar"),
+                    ),
+                    # ON UPDATE clause, e.g. ON UPDATE SET NULL
+                    Sequence(
+                        "ON",
+                        "UPDATE",
+                        Ref("TableConstraintReferenceOptionGrammar"),
+                    ),
+                ),
             ),
         ),
     )
@@ -2264,6 +2301,20 @@ class DropSchemaStatementSegment(BaseSegment):
         "SCHEMA",
         Ref("IfExistsGrammar", optional=True),
         Ref("SchemaReferenceSegment"),
+        OneOf("RESTRICT", "CASCADE", optional=True),
+    )
+
+
+@ansi_dialect.segment()
+class DropTypeStatementSegment(BaseSegment):
+    """A `DROP TYPE` statement."""
+
+    type = "drop_type_statement"
+    match_grammar = Sequence(
+        "DROP",
+        "TYPE",
+        Ref("IfExistsGrammar", optional=True),
+        Ref("ObjectReferenceSegment"),
         OneOf("RESTRICT", "CASCADE", optional=True),
     )
 
@@ -2573,7 +2624,7 @@ class AccessStatementSegment(BaseSegment):
                 ),
                 optional=True,
             ),
-            Ref("ObjectReferenceSegment"),
+            Delimited(Ref("ObjectReferenceSegment"), terminator=OneOf("TO", "FROM")),
             Ref("FunctionParameterListGrammar", optional=True),
         ),
         Sequence("LARGE", "OBJECT", Ref("NumericLiteralSegment")),
@@ -2960,6 +3011,7 @@ class StatementSegment(BaseSegment):
         Ref("CreateSchemaStatementSegment"),
         Ref("SetSchemaStatementSegment"),
         Ref("DropSchemaStatementSegment"),
+        Ref("DropTypeStatementSegment"),
         Ref("CreateDatabaseStatementSegment"),
         Ref("CreateExtensionStatementSegment"),
         Ref("CreateIndexStatementSegment"),
@@ -3008,6 +3060,17 @@ class WithNoSchemaBindingClauseSegment(BaseSegment):
         "SCHEMA",
         "BINDING",
     )
+
+
+@ansi_dialect.segment()
+class WithDataClauseSegment(BaseSegment):
+    """WITH [NO] DATA clause for Postgres' MATERIALIZED VIEWS.
+
+    https://www.postgresql.org/docs/9.3/sql-creatematerializedview.html
+    """
+
+    type = "with_data_clause"
+    match_grammar = Sequence("WITH", Sequence("NO", optional=True), "DATA")
 
 
 @ansi_dialect.segment()

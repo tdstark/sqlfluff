@@ -15,8 +15,11 @@ from sqlfluff.core.parser import (
     AnyNumberOf,
     BaseSegment,
     Bracketed,
-    Delimited,
     CommentSegment,
+    Conditional,
+    Dedent,
+    Delimited,
+    Indent,
     NamedParser,
     OneOf,
     OptionallyBracketed,
@@ -52,6 +55,11 @@ spark3_dialect.patch_lexer_matchers(
         # <=> is a non-null equals in Spark SQL
         # https://spark.apache.org/docs/latest/api/sql/index.html#_10
         RegexLexer("equals", r"=|==|<=>", CodeSegment),
+        # identifiers are delimited with `
+        # within a delimited identifier, ` is used to escape special characters, including `
+        # Ex: select `delimited `` with escaped` from `just delimited`
+        # https://spark.apache.org/docs/latest/sql-ref-identifier.html#delimited-identifier
+        RegexLexer("back_quote", r"`([^`]|``)*`", CodeSegment),
     ]
 )
 
@@ -116,6 +124,13 @@ spark3_dialect.replace(
     TemporaryGrammar=Sequence(
         Sequence("GLOBAL", optional=True),
         OneOf("TEMP", "TEMPORARY"),
+    ),
+    QuotedIdentifierSegment=NamedParser(
+        "back_quote",
+        CodeSegment,
+        name="quoted_identifier",
+        type="identifier",
+        trim_chars=("`",),
     ),
 )
 
@@ -693,3 +708,78 @@ class StatementSegment(BaseSegment):
             Ref("DropModelStatementSegment"),
         ],
     )
+
+
+@spark3_dialect.segment(replace=True)
+class JoinClauseSegment(BaseSegment):
+    """Any number of join clauses, including the `JOIN` keyword.
+
+    https://spark.apache.org/docs/3.0.0/sql-ref-syntax-qry-select-join.html
+    TODO: Add NATURAL JOIN syntax.
+    """
+
+    type = "join_clause"
+    match_grammar = Sequence(
+        # NB These qualifiers are optional
+        # TODO: Allow nested joins like:
+        # ....FROM S1.T1 t1 LEFT JOIN ( S2.T2 t2 JOIN S3.T3 t3 ON t2.col1=t3.col1) ON tab1.col1 = tab2.col1
+        OneOf(
+            "CROSS",
+            "INNER",
+            Sequence(
+                OneOf(
+                    "FULL",
+                    "LEFT",
+                    "RIGHT",
+                ),
+                Ref.keyword("OUTER", optional=True),
+            ),
+            Sequence(
+                Ref.keyword("LEFT", optional=True),
+                "SEMI",
+            ),
+            Sequence(
+                Ref.keyword("LEFT", optional=True),
+                "ANTI",
+            ),
+            optional=True,
+        ),
+        Ref("JoinKeywords"),
+        Indent,
+        Sequence(
+            Ref("FromExpressionElementSegment"),
+            Conditional(Dedent, indented_using_on=False),
+            # NB: this is optional
+            OneOf(
+                # ON clause
+                Ref("JoinOnConditionSegment"),
+                # USING clause
+                Sequence(
+                    "USING",
+                    Indent,
+                    Bracketed(
+                        # NB: We don't use BracketedColumnReferenceListGrammar
+                        # here because we're just using SingleIdentifierGrammar,
+                        # rather than ObjectReferenceSegment or ColumnReferenceSegment.
+                        # This is a) so that we don't lint it as a reference and
+                        # b) because the column will probably be returned anyway
+                        # during parsing.
+                        Delimited(
+                            Ref("SingleIdentifierGrammar"),
+                            ephemeral_name="UsingClauseContents",
+                        )
+                    ),
+                    Dedent,
+                ),
+                # Unqualified joins *are* allowed. They just might not
+                # be a good idea.
+                optional=True,
+            ),
+            Conditional(Indent, indented_using_on=False),
+        ),
+        Dedent,
+    )
+
+    get_eventual_alias = ansi_dialect.get_segment(
+        "JoinClauseSegment"
+    ).get_eventual_alias

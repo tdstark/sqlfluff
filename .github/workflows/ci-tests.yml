@@ -43,7 +43,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ '3.6', '3.7', '3.8', '3.9', '3.10' ]
+        python-version: [ '3.7', '3.8', '3.9', '3.10' ]
     name: Python ${{ matrix.python-version }} tests
     steps:
     - uses: actions/checkout@v2
@@ -61,7 +61,7 @@ jobs:
         echo 'EOF' >> $GITHUB_ENV
     - name: Run the tests
       run: |
-        tox -e ${{ env.TOXENV }}
+        tox -e ${{ env.TOXENV }} -- -n 2 test
     - name: Upload Coverage Report
       uses: codecov/codecov-action@v1
       with:
@@ -113,7 +113,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        dbt-version: [ 'dbt018', 'dbt019', 'dbt020', 'dbt021' ]
+        dbt-version: [ 'dbt018', 'dbt019', 'dbt020', 'dbt021', 'dbt100' ]
     name: DBT Plugin ${{ matrix.dbt-version }} tests
     steps:
     - uses: actions/checkout@v2
@@ -159,7 +159,7 @@ jobs:
       # working dir on D drive which causes problems.
       run: |
         mkdir temp_pytest
-        python -m tox -e winpy
+        python -m tox -e winpy -- -n 2 test
     - name: Upload Coverage Report
       uses: codecov/codecov-action@v1
       with:
@@ -208,9 +208,15 @@ jobs:
     - name: Run the version test
       run: |
         sqlfluff --version
-    - name: Run a simple select parse test
+    - name: Run a simple select parse test via stdin
       run: |
         echo "select 1" | sqlfluff parse -
-    - name: Run a simple select lint test
+    - name: Run a simple select lint test via stdin
       run: |
         echo "select 1" | sqlfluff lint -
+    - name: Run a simple select parse test via file
+      run: |
+        sqlfluff parse <(echo "select 1")
+    - name: Run a simple select lint test via file
+      run: |
+        sqlfluff lint <(echo "select 1")

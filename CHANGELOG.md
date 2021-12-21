@@ -9,6 +9,174 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Note: Changes are now automatically tracked in [GitHub](https://github.com/sqlfluff/sqlfluff/releases) and will be copied in here on each release (please remember to update the issues and contributors to links!). There is no need to manually edit this file going forward.
 -->
 
+## [0.9.0] - 2021-12-13
+
+## What’s Changed
+
+This release brings about several great new additions including:
+- dbt 1.0.0 compatibility.
+- CLI and Simple API paramaters to provide custom paths to config files.
+- Refinement to Simple API to return parse output in JSON format rather than as an internal SQLFluff object (**BREAKING CHANGE**).
+- An [Official SQLFluff Docker Image](https://hub.docker.com/r/sqlfluff/sqlfluff).
+- Grammar improvements across various dialects.
+- A new rule (L057) to check for non-alphanumeric values in identifiers.
+
+There have also been many bug fixes and improvements to the CI and development processes.
+
+## 🚀 Enhancements
+
+* TSQL: Reserved Keyword cleanup [#2100](https://github.com/sqlfluff/sqlfluff/pull/2100) [@jpers36](https://github.com/jpers36)
+* Add wiki links to CONTRIBUTING.md [#2106](https://github.com/sqlfluff/sqlfluff/pull/2106) [@tunetheweb](https://github.com/tunetheweb)
+* Add snowflake create stage and alter stage statements + RegexParser case fix [#2098](https://github.com/sqlfluff/sqlfluff/pull/2098) [@chwiese](https://github.com/chwiese)
+* Allow for more value types in ALTER TABLE ALTER COLUMN SET DEFAULT statement [#2101](https://github.com/sqlfluff/sqlfluff/pull/2101) [@derickl](https://github.com/derickl)
+* Grammar: Adds support for ALTER VIEW statement for Postgres dialect [#2096](https://github.com/sqlfluff/sqlfluff/pull/2096) [@derickl](https://github.com/derickl)
+* Add example for using JSON output of Simple API parse function [#2099](https://github.com/sqlfluff/sqlfluff/pull/2099) [@jpy-git](https://github.com/jpy-git)
+* Allow optional keywords in create table unique constraints [#2077](https://github.com/sqlfluff/sqlfluff/pull/2077) [@kayman-mk](https://github.com/kayman-mk)
+* Grammar: Adds support for ALTER FUNCTION statement for Postgres dialect [#2090](https://github.com/sqlfluff/sqlfluff/pull/2090) [@derickl](https://github.com/derickl)
+* Grammar: adds support for CREATE/ALTER/DROP DATABASE for Postgres dialect [#2081](https://github.com/sqlfluff/sqlfluff/pull/2081) [@derickl](https://github.com/derickl)
+* Update parse method of Simple API to output JSON parse tree [#2082](https://github.com/sqlfluff/sqlfluff/pull/2082) [@jpy-git](https://github.com/jpy-git)
+* TSQL dialect: add parsing for MERGE statement [#2057](https://github.com/sqlfluff/sqlfluff/pull/2057) [@tkachenkomaria244](https://github.com/tkachenkomaria244)
+* Simple API config path [#2080](https://github.com/sqlfluff/sqlfluff/pull/2080) [@jpy-git](https://github.com/jpy-git)
+* dbt 1.0.0 compatability [#2079](https://github.com/sqlfluff/sqlfluff/pull/2079) [@alanmcruickshank](https://github.com/alanmcruickshank)
+* Parse `on delete` and `on update` clause for create table constraints [#2076](https://github.com/sqlfluff/sqlfluff/pull/2076) [@kayman-mk](https://github.com/kayman-mk)
+* Pre-commit: Add hook for doc8 [#2074](https://github.com/sqlfluff/sqlfluff/pull/2074) [@jpy-git](https://github.com/jpy-git)
+* Grammar: Fix typo in Alter Table parser in Postgres dialect [#2072](https://github.com/sqlfluff/sqlfluff/pull/2072) [@derickl](https://github.com/derickl)
+* Grammar: Adds support for materialized views for postgres dialect [#2041](https://github.com/sqlfluff/sqlfluff/pull/2041) [@derickl](https://github.com/derickl)
+* Add basic pre-commit config [#2067](https://github.com/sqlfluff/sqlfluff/pull/2067) [@jpy-git](https://github.com/jpy-git)
+* CLI: Add --ignore-local-config flag [#2061](https://github.com/sqlfluff/sqlfluff/pull/2061) [@jpy-git](https://github.com/jpy-git)
+* TSQL: INSERT INTO [#2054](https://github.com/sqlfluff/sqlfluff/pull/2054) [@jpers36](https://github.com/jpers36)
+* Add --disable-noqa option to CLI and config [#2043](https://github.com/sqlfluff/sqlfluff/pull/2043) [@jpy-git](https://github.com/jpy-git)
+* TSQL: TRY/CATCH [#2044](https://github.com/sqlfluff/sqlfluff/pull/2044) [@jpers36](https://github.com/jpers36)
+* enabled arrays support in `declare` and `set` statements for `bigquery` dialect [#2038](https://github.com/sqlfluff/sqlfluff/pull/2038) [@KulykDmytro](https://github.com/KulykDmytro)
+* L008 refactor [#2004](https://github.com/sqlfluff/sqlfluff/pull/2004) [@jpy-git](https://github.com/jpy-git)
+* Support __init__.py for library_path [#1976](https://github.com/sqlfluff/sqlfluff/pull/1976) [@Tonkonozhenko](https://github.com/Tonkonozhenko)
+* L052: Redefine semi-colon newline to multiline newline [#2022](https://github.com/sqlfluff/sqlfluff/pull/2022) [@jpy-git](https://github.com/jpy-git)
+* Grammar: Remove hash inline comment from Postgres [#2035](https://github.com/sqlfluff/sqlfluff/pull/2035) [@jpy-git](https://github.com/jpy-git)
+* `noqa` enhancement: Enable glob rule matching for inline comments [#2002](https://github.com/sqlfluff/sqlfluff/pull/2002) [@jpy-git](https://github.com/jpy-git)
+* TSQL (ASA): Allow for table identifier in DELETE clause [#2031](https://github.com/sqlfluff/sqlfluff/pull/2031) [@jpers36](https://github.com/jpers36)
+* TSQL (ASA): Fix CTAS with WITH statement [#2028](https://github.com/sqlfluff/sqlfluff/pull/2028) [@jpers36](https://github.com/jpers36)
+* Grammar: Parse multiple grants [#2023](https://github.com/sqlfluff/sqlfluff/pull/2023) [@jpy-git](https://github.com/jpy-git)
+* Add tsql nested block comment support and add regex package dependency [#2027](https://github.com/sqlfluff/sqlfluff/pull/2027) [@jpy-git](https://github.com/jpy-git)
+* Grammar: Add complete Snowflake datetime units [#2026](https://github.com/sqlfluff/sqlfluff/pull/2026) [@jpy-git](https://github.com/jpy-git)
+* Grammar: Add DROP POLICY statement to postgres dialect [#2024](https://github.com/sqlfluff/sqlfluff/pull/2024) [@jpy-git](https://github.com/jpy-git)
+* Grammar: Add complete datetime units to postgres dialect [#2025](https://github.com/sqlfluff/sqlfluff/pull/2025) [@jpy-git](https://github.com/jpy-git)
+* Grammar: Postgres CREATE POLICY [#2021](https://github.com/sqlfluff/sqlfluff/pull/2021) [@jpy-git](https://github.com/jpy-git)
+* Speed up CI [#1957](https://github.com/sqlfluff/sqlfluff/pull/1957) [@pwildenhain](https://github.com/pwildenhain)
+* Add support for Snowflake create/alter SQL and js UDF [#1993](https://github.com/sqlfluff/sqlfluff/pull/1993) [@chwiese](https://github.com/chwiese)
+* Add encoding CLI argument [#1994](https://github.com/sqlfluff/sqlfluff/pull/1994) [@jpy-git](https://github.com/jpy-git)
+* TSQL: Spaces allowed in comparison operators [#1965](https://github.com/sqlfluff/sqlfluff/pull/1965) [@jpers36](https://github.com/jpers36)
+* Add Snowflake schema options [#1950](https://github.com/sqlfluff/sqlfluff/pull/1950) [@chwiese](https://github.com/chwiese)
+* CLI/`.sqlfluff` enhancement: Rule globs [#1972](https://github.com/sqlfluff/sqlfluff/pull/1972) [@jpy-git](https://github.com/jpy-git)
+* Add config CLI argument to lint, fix, and parse [#1986](https://github.com/sqlfluff/sqlfluff/pull/1986) [@jpy-git](https://github.com/jpy-git)
+* Add type hints to simple API [#1951](https://github.com/sqlfluff/sqlfluff/pull/1951) [@jpy-git](https://github.com/jpy-git)
+* New rule to flag special characters in identifiers [#1958](https://github.com/sqlfluff/sqlfluff/pull/1958) [@jpers36](https://github.com/jpers36)
+* Allow column references in IN statement [#1971](https://github.com/sqlfluff/sqlfluff/pull/1971) [@tunetheweb](https://github.com/tunetheweb)
+* Remove config.ini in favor of setup.cfg [#1966](https://github.com/sqlfluff/sqlfluff/pull/1966) [@jpy-git](https://github.com/jpy-git)
+* Convert sqlfluff-templater-dbt setup.py to setup.cfg [#1963](https://github.com/sqlfluff/sqlfluff/pull/1963) [@jpy-git](https://github.com/jpy-git)
+* Official Docker image: Dockerfile and Github Actions workflow [#1945](https://github.com/sqlfluff/sqlfluff/pull/1945) [@jpy-git](https://github.com/jpy-git)
+* Move package metadata to setup.cfg [#1960](https://github.com/sqlfluff/sqlfluff/pull/1960) [@jpy-git](https://github.com/jpy-git)
+
+## 🐛 Bug Fixes
+
+* Fix tsql block comment close [#2095](https://github.com/sqlfluff/sqlfluff/pull/2095) [@jpy-git](https://github.com/jpy-git)
+* Fix PlaceholderTemplater slice_type for templated code (substitutions) [#2085](https://github.com/sqlfluff/sqlfluff/pull/2085) [@barrywhart](https://github.com/barrywhart)
+* Exasol: Fix UDF script syntax [#2083](https://github.com/sqlfluff/sqlfluff/pull/2083) [@sti0](https://github.com/sti0)
+* Fix issues with placeholder templating docs [#2078](https://github.com/sqlfluff/sqlfluff/pull/2078) [@jpy-git](https://github.com/jpy-git)
+* Update dbt templater docs to clarify that the profiles_dir setting is optional [#2070](https://github.com/sqlfluff/sqlfluff/pull/2070) [@barrywhart](https://github.com/barrywhart)
+* Bug fix of L054 for Snowflake and Exasol [#2069](https://github.com/sqlfluff/sqlfluff/pull/2069) [@tunetheweb](https://github.com/tunetheweb)
+* Fix L043 issue when trying to autofix functions [#2059](https://github.com/sqlfluff/sqlfluff/pull/2059) [@jpy-git](https://github.com/jpy-git)
+* Add request for users dbt version in bug_report issue template [#2058](https://github.com/sqlfluff/sqlfluff/pull/2058) [@jpy-git](https://github.com/jpy-git)
+* Fix parameters for Snowflake create tasks statement [#2037](https://github.com/sqlfluff/sqlfluff/pull/2037) [@chwiese](https://github.com/chwiese)
+* Linguist: Include test/** in language statistics to better reflect use of SQL [#2034](https://github.com/sqlfluff/sqlfluff/pull/2034) [@jpy-git](https://github.com/jpy-git)
+* L044 should handle nested CTEs [#1991](https://github.com/sqlfluff/sqlfluff/pull/1991) [@barrywhart](https://github.com/barrywhart)
+* Add dbt adapter install advice to configuration documentation [#2011](https://github.com/sqlfluff/sqlfluff/pull/2011) [@jpy-git](https://github.com/jpy-git)
+* Update pre-commit dbt instructions to reference separate dbt package [#2005](https://github.com/sqlfluff/sqlfluff/pull/2005) [@jpy-git](https://github.com/jpy-git)
+* Fix config.get for iterable sections [#2020](https://github.com/sqlfluff/sqlfluff/pull/2020) [@jpy-git](https://github.com/jpy-git)
+* Fix inline comment interactions with L052 [#2019](https://github.com/sqlfluff/sqlfluff/pull/2019) [@jpy-git](https://github.com/jpy-git)
+* Make Snowflake tags DRY [#1992](https://github.com/sqlfluff/sqlfluff/pull/1992) [@chwiese](https://github.com/chwiese)
+* Rename whitelist/blacklist to allowlist/denylist [#1989](https://github.com/sqlfluff/sqlfluff/pull/1989) [@jpy-git](https://github.com/jpy-git)
+* Fix issue with inline ignores not respecting comment lines [#1985](https://github.com/sqlfluff/sqlfluff/pull/1985) [@jpy-git](https://github.com/jpy-git)
+* Fix L009 FileSegment child + new create_before/create_after edit types [#1979](https://github.com/sqlfluff/sqlfluff/pull/1979) [@jpy-git](https://github.com/jpy-git)
+* Adds extra check to L054 to avoid weird error messages [#1988](https://github.com/sqlfluff/sqlfluff/pull/1988) [@tunetheweb](https://github.com/tunetheweb)
+* BigQuery: Allow keywords in column reference components [#1987](https://github.com/sqlfluff/sqlfluff/pull/1987) [@tunetheweb](https://github.com/tunetheweb)
+* L027: Remove unnessary crawl in get_select_statement_info [#1974](https://github.com/sqlfluff/sqlfluff/pull/1974) [@jpy-git](https://github.com/jpy-git)
+* Add __all__ attributes to __init__.py files to resolve F401 [#1949](https://github.com/sqlfluff/sqlfluff/pull/1949) [@jpy-git](https://github.com/jpy-git)
+* Fix incorrect comment on L055 [#1967](https://github.com/sqlfluff/sqlfluff/pull/1967) [@jpy-git](https://github.com/jpy-git)
+* Docs: fix docker hub link to public URL [#1964](https://github.com/sqlfluff/sqlfluff/pull/1964) [@kevinmarsh](https://github.com/kevinmarsh)
+* Fix issue releasing dbt package: tox commands run relative to repo root [#1962](https://github.com/sqlfluff/sqlfluff/pull/1962) [@jpy-git](https://github.com/jpy-git)
+
+## [0.8.2] - 2021-11-22
+
+## What’s Changed
+
+One of the biggest new features in this release is the support for SQLAlchemy and other "placeholder" templating within SQL queries. Check out [the documentation on how to set it up](https://docs.sqlfluff.com/en/latest/configuration.html#placeholder-templating).
+
+This release also adds **seven** new rules. Get some help with your leading whitespace, semi-colon placement, inconsistent column references in `GROUP BY/ORDER BY`, and getting rid of `RIGHT JOIN`'s among other useful lints with our new rules! See our [rules documentation](https://docs.sqlfluff.com/en/stable/rules.html) for more details.
+
+On top of those, we have made loads of grammar improvements across many dialects, improvements to the dbt templater (including issues where `sqlfluff fix` would corrupt the code :scream:), more fix routines, and lots more improvements.
+
+## 🚀 Enhancements
+
+* [many dialects] Implement generic placeholder templating [#1887](https://github.com/sqlfluff/sqlfluff/pull/1887) [@jacopofar](https://github.com/jacopofar)
+* [many dialects] Add support for SQLAlchemy templating [#1878](https://github.com/sqlfluff/sqlfluff/pull/1878) [@jacopofar](https://github.com/jacopofar)
+* Add DROP PROCEDURE statement to T-SQL [#1921](https://github.com/sqlfluff/sqlfluff/pull/1921) [@jpy-git](https://github.com/jpy-git)
+* TSQL dialect: fix index/tables creation options [#1955](https://github.com/sqlfluff/sqlfluff/pull/1955) [@tkachenkomaria244](https://github.com/tkachenkomaria244)
+* Add DROP TYPE statement to ANSI dialect [#1919](https://github.com/sqlfluff/sqlfluff/pull/1919) [@jpy-git](https://github.com/jpy-git)
+* Add INSERT INTO statements to Redshift Dialect [#1896](https://github.com/sqlfluff/sqlfluff/pull/1896) [@tdstark](https://github.com/tdstark)
+* Added TABLESAMPLE support to Bigquery [#1897](https://github.com/sqlfluff/sqlfluff/pull/1897) [@WittierDinosaur](https://github.com/WittierDinosaur)
+* Add [LEFT] ANTI and [LEFT] SEMI joins to the Spark3 dialect [#1942](https://github.com/sqlfluff/sqlfluff/pull/1942) [@jpy-git](https://github.com/jpy-git)
+* Parse UPDATE/INSERT within WITH clause [#1889](https://github.com/sqlfluff/sqlfluff/pull/1889) [@jpy-git](https://github.com/jpy-git)
+* Add OVERRIDING SYSTEM/USER VALUE to insert statement in postgres dialect [#1869](https://github.com/sqlfluff/sqlfluff/pull/1869) [@jpy-git](https://github.com/jpy-git)
+* Add support for DROP SCHEMA [IF EXISTS] name [ CASCADE | RESTRICT ] [#1865](https://github.com/sqlfluff/sqlfluff/pull/1865) [@gimmyxd](https://github.com/gimmyxd)
+* Add CREATE TABLE Statement To Redshift [#1855](https://github.com/sqlfluff/sqlfluff/pull/1855) [@tdstark](https://github.com/tdstark)
+* Add DROP TYPE statement in postgres dialect [#1870](https://github.com/sqlfluff/sqlfluff/pull/1870) [@jpy-git](https://github.com/jpy-git)
+* Add SEQUENCE NAME to postgres sequence options [#1866](https://github.com/sqlfluff/sqlfluff/pull/1866) [@jpy-git](https://github.com/jpy-git)
+* Added SET Statement to Postgres [#1877](https://github.com/sqlfluff/sqlfluff/pull/1877) [@WittierDinosaur](https://github.com/WittierDinosaur)
+* Postgres: Allow use of quoted identifiers to ALTER TABLE OWNER TO [#1856](https://github.com/sqlfluff/sqlfluff/pull/1856) [@markpolyak](https://github.com/markpolyak)
+* Updates to COPY INTO grammar in Snowflake [#1884](https://github.com/sqlfluff/sqlfluff/pull/1884) [@WittierDinosaur](https://github.com/WittierDinosaur)
+* Postgres & T-SQL: Drop Function [#1924](https://github.com/sqlfluff/sqlfluff/pull/1924) [@WittierDinosaur](https://github.com/WittierDinosaur)
+* Add Expressions to SET syntax [#1852](https://github.com/sqlfluff/sqlfluff/pull/1852) [@tunetheweb](https://github.com/tunetheweb)
+* Update DbtTemplater to use JinjaTracer [#1788](https://github.com/sqlfluff/sqlfluff/pull/1788) [@barrywhart](https://github.com/barrywhart)
+* L043 refinement: Add autofix for common use of CASE to fill NULL values. [#1923](https://github.com/sqlfluff/sqlfluff/pull/1923) [@jpy-git](https://github.com/jpy-git)
+* New Rule L050: No leading whitespace [#1840](https://github.com/sqlfluff/sqlfluff/pull/1840) [@jpy-git](https://github.com/jpy-git)
+* L050: updating to target jinja templates [#1885](https://github.com/sqlfluff/sqlfluff/pull/1885) [@jpy-git](https://github.com/jpy-git)
+* New rule L051 to forbid lone JOIN [#1879](https://github.com/sqlfluff/sqlfluff/pull/1879) [@jpy-git](https://github.com/jpy-git)
+* New Rule L052: Semi colon alignment [#1902](https://github.com/sqlfluff/sqlfluff/pull/1902) [@jpy-git](https://github.com/jpy-git)
+* New Rule L053: Remove outer brackets from top-level statements. [#1916](https://github.com/sqlfluff/sqlfluff/pull/1916) [@jpy-git](https://github.com/jpy-git)
+* New Rule L054: Inconsistent column references in GROUP BY/ORDER BY clauses. [#1917](https://github.com/sqlfluff/sqlfluff/pull/1917) [@jpy-git](https://github.com/jpy-git)
+* New Rule L055: Use LEFT JOIN instead of RIGHT JOIN. [#1931](https://github.com/sqlfluff/sqlfluff/pull/1931) [@jpy-git](https://github.com/jpy-git)
+* New Rule L056: 'SP_' prefix should not be used for user-defined stored procedures [#1930](https://github.com/sqlfluff/sqlfluff/pull/1930) [@jpy-git](https://github.com/jpy-git)
+* Tsql partition by multiple columns [#1906](https://github.com/sqlfluff/sqlfluff/pull/1906) [@jpers36](https://github.com/jpers36)
+* Added bare functions to values clause [#1876](https://github.com/sqlfluff/sqlfluff/pull/1876) [@WittierDinosaur](https://github.com/WittierDinosaur)
+* Remove unnecessary context section, from code and the docs [#1905](https://github.com/sqlfluff/sqlfluff/pull/1905) [@jacopofar](https://github.com/jacopofar)
+* L036 docstring refinements [#1903](https://github.com/sqlfluff/sqlfluff/pull/1903) [@jpy-git](https://github.com/jpy-git)
+* Add `exclude_rules` option for the Simple API [#1850](https://github.com/sqlfluff/sqlfluff/pull/1850) [@tunetheweb](https://github.com/tunetheweb)
+* Tox improvements: Streamline development/testing environments. [#1860](https://github.com/sqlfluff/sqlfluff/pull/1860) [@jpy-git](https://github.com/jpy-git)
+* Add Tox publish commands [#1853](https://github.com/sqlfluff/sqlfluff/pull/1853) [@jpy-git](https://github.com/jpy-git)
+* Documentation: Change inheritance dialect example to Redshift [#1900](https://github.com/sqlfluff/sqlfluff/pull/1900) [@chwiese](https://github.com/chwiese)
+* Remove failing requires.io badge [#1898](https://github.com/sqlfluff/sqlfluff/pull/1898) [@jpy-git](https://github.com/jpy-git)
+* [Snowflake] Allow naked AUTOINCREMENT [#1883](https://github.com/sqlfluff/sqlfluff/pull/1883) [@gordonhart](https://github.com/gordonhart)
+* Add support for curly brackets in SnowSQL ampersand variables [#1901](https://github.com/sqlfluff/sqlfluff/pull/1901) [@chwiese](https://github.com/chwiese)
+* Add short form help option (-h) [#1947](https://github.com/sqlfluff/sqlfluff/pull/1947) [@jpy-git](https://github.com/jpy-git)
+* Remove plaintext API key from benchmark utility [#1863](https://github.com/sqlfluff/sqlfluff/pull/1863) [@jpy-git](https://github.com/jpy-git)
+* Add `skip_install` to static analysis sections of tox.ini [#1851](https://github.com/sqlfluff/sqlfluff/pull/1851) [@jpy-git](https://github.com/jpy-git)
+* Move typing_extensions from `requirements_dev.txt` to `requirements.txt` [#1956](https://github.com/sqlfluff/sqlfluff/pull/1956) [@jpy-git](https://github.com/jpy-git)
+
+## 🐛 Bug Fixes
+
+* Fix bug where "sqlfluff fix" deletes dbt "{% snapshot %}" line [#1907](https://github.com/sqlfluff/sqlfluff/pull/1907) [@barrywhart](https://github.com/barrywhart)
+* Fix subquery bug in L026 [#1948](https://github.com/sqlfluff/sqlfluff/pull/1948) [@jpy-git](https://github.com/jpy-git)
+* Fix bug where L041 was confused by L016's placement of newlines in the parse tree [#1904](https://github.com/sqlfluff/sqlfluff/pull/1904) [@barrywhart](https://github.com/barrywhart)
+* Fix progressbar artifacts within linter errors [#1873](https://github.com/sqlfluff/sqlfluff/pull/1873) [@adam-tokarski](https://github.com/adam-tokarski)
+* Correct Snowflake warehouse sizes [#1872](https://github.com/sqlfluff/sqlfluff/pull/1872) [@jpy-git](https://github.com/jpy-git)
+* Fixed Delimited() logic, added TSQL grammar [#1894](https://github.com/sqlfluff/sqlfluff/pull/1894) [@WittierDinosaur](https://github.com/WittierDinosaur)
+* L036 refinement - FROM clause interaction [#1893](https://github.com/sqlfluff/sqlfluff/pull/1893) [@jpy-git](https://github.com/jpy-git)
+* Add missing chardet install in setup.py [#1928](https://github.com/sqlfluff/sqlfluff/pull/1928) [@jpy-git](https://github.com/jpy-git)
+* Fix misplaced TableAliasInfo in L031 documentation [#1946](https://github.com/sqlfluff/sqlfluff/pull/1946) [@jpy-git](https://github.com/jpy-git)
+* Fix broken link to external SQL style guide [#1918](https://github.com/sqlfluff/sqlfluff/pull/1918) [@kevinmarsh](https://github.com/kevinmarsh)
+
+
+
 ## [0.8.1] - 2021-11-07
 
 ## What’s Changed

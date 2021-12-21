@@ -1,5 +1,6 @@
 """Defines the linter class."""
 
+import fnmatch
 import os
 import time
 import logging
@@ -9,14 +10,13 @@ from typing import (
     Sequence,
     Optional,
     Tuple,
-    Union,
     cast,
     Iterable,
     Iterator,
 )
 
 import pathspec
-
+import regex
 from tqdm import tqdm
 
 from sqlfluff.core.errors import (
@@ -66,9 +66,9 @@ class Linter:
         config: Optional[FluffConfig] = None,
         formatter: Any = None,
         dialect: Optional[str] = None,
-        rules: Optional[Union[str, List[str]]] = None,
-        user_rules: Optional[Union[str, List[str]]] = None,
-        exclude_rules: Optional[Union[str, List[str]]] = None,
+        rules: Optional[List[str]] = None,
+        user_rules: Optional[List[BaseRule]] = None,
+        exclude_rules: Optional[List[str]] = None,
     ) -> None:
         # Store the config object
         self.config = FluffConfig.from_kwargs(
@@ -103,7 +103,9 @@ class Linter:
     # These are the building blocks of the linting process.
 
     @staticmethod
-    def _load_raw_file_and_config(fname, root_config):
+    def _load_raw_file_and_config(
+        fname: str, root_config: FluffConfig
+    ) -> Tuple[str, FluffConfig, str]:
         """Load a raw file and the associated config."""
         file_config = root_config.make_child_from_path(fname)
         encoding = get_encoding(fname=fname, config=file_config)
@@ -113,6 +115,11 @@ class Linter:
         file_config.process_raw_file_for_config(raw_file)
         # Return the raw file and config
         return raw_file, file_config, encoding
+
+    @staticmethod
+    def _normalise_newlines(string: str) -> str:
+        """Normalise newlines to unix-style line endings."""
+        return regex.sub(r"\r\n|\r", "\n", string)
 
     @staticmethod
     def _lex_templated_file(
@@ -224,9 +231,19 @@ class Linter:
         return parsed, violations
 
     @staticmethod
-    def parse_noqa(comment: str, line_no: int):
+    def parse_noqa(
+        comment: str,
+        line_no: int,
+        rule_codes: List[str],
+    ):
         """Extract ignore mask entries from a comment string."""
         # Also trim any whitespace afterward
+
+        # Comment lines can also have noqa e.g.
+        # --dafhsdkfwdiruweksdkjdaffldfsdlfjksd -- noqa: L016
+        # Therefore extract last possible inline ignore.
+        comment = [c.strip() for c in comment.split("--")][-1]
+
         if comment.startswith("noqa"):
             # This is an ignore identifier
             comment_remainder = comment[4:]
@@ -260,7 +277,26 @@ class Linter:
                             )
                     rules: Optional[Tuple[str, ...]]
                     if rule_part != "all":
-                        rules = tuple(r.strip() for r in rule_part.split(","))
+                        # Rules can be globs therefore we compare to the rule_set to expand the globs.
+                        unexpanded_rules = tuple(
+                            r.strip() for r in rule_part.split(",")
+                        )
+                        expanded_rules = []
+                        for r in unexpanded_rules:
+                            expanded_rule = [
+                                x
+                                for x in fnmatch.filter(rule_codes, r)
+                                if x not in expanded_rules
+                            ]
+                            if expanded_rule:
+                                expanded_rules.extend(expanded_rule)
+                            elif r not in expanded_rules:
+                                # We were unable to expand the glob.
+                                # Therefore assume the user is referencing
+                                # a special error type (e.g. PRS, LXR, or TMP)
+                                # and add this to the list of rules to ignore.
+                                expanded_rules.append(r)
+                        rules = tuple(expanded_rules)
                     else:
                         rules = None
                     return NoQaDirective(line_no, rules, action)
@@ -345,26 +381,32 @@ class Linter:
         )
 
     @classmethod
-    def extract_ignore_from_comment(cls, comment: RawSegment):
+    def extract_ignore_from_comment(
+        cls,
+        comment: RawSegment,
+        rule_codes: List[str],
+    ):
         """Extract ignore mask entries from a comment segment."""
         # Also trim any whitespace afterward
         comment_content = comment.raw_trimmed().strip()
         comment_line, _ = comment.pos_marker.source_position()
-        result = cls.parse_noqa(comment_content, comment_line)
+        result = cls.parse_noqa(comment_content, comment_line, rule_codes)
         if isinstance(result, SQLParseError):
             result.segment = comment
         return result
 
     @classmethod
     def extract_ignore_mask(
-        cls, tree: BaseSegment
+        cls,
+        tree: BaseSegment,
+        rule_codes: List[str],
     ) -> Tuple[List[NoQaDirective], List[SQLBaseError]]:
         """Look for inline ignore comments and return NoQaDirectives."""
         ignore_buff: List[NoQaDirective] = []
         violations: List[SQLBaseError] = []
         for comment in tree.recursive_crawl("comment"):
             if comment.name == "inline_comment":
-                ignore_entry = cls.extract_ignore_from_comment(comment)
+                ignore_entry = cls.extract_ignore_from_comment(comment, rule_codes)
                 if isinstance(ignore_entry, SQLParseError):
                     violations.append(ignore_entry)
                 elif ignore_entry:
@@ -400,8 +442,12 @@ class Linter:
             formatter.dispatch_lint_header(fname)
 
         # Look for comment segments which might indicate lines to ignore.
-        ignore_buff, ivs = cls.extract_ignore_mask(tree)
-        all_linting_errors += ivs
+        if not config.get("disable_noqa"):
+            rule_codes = [r.code for r in rule_set]
+            ignore_buff, ivs = cls.extract_ignore_mask(tree, rule_codes)
+            all_linting_errors += ivs
+        else:
+            ignore_buff = []
 
         for loop in range(loop_limit):
             changed = False
@@ -564,6 +610,11 @@ class Linter:
 
         # Start the templating timer
         t0 = time.monotonic()
+
+        # Newlines are normalised to unix-style line endings (\n).
+        # The motivation is that Jinja normalises newlines during templating and
+        # we want consistent mapping between the raw and templated slices.
+        in_str = self._normalise_newlines(in_str)
 
         if not config.get("templater_obj") == self.templater:
             linter_logger.warning(

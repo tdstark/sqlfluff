@@ -25,6 +25,25 @@ ALTER TABLE foo
         timestamp 'epoch' + foo_timestamp * interval '1 second',
     ALTER COLUMN foo_timestamp SET DEFAULT now();
 
+ALTER TABLE mytable ALTER date_column SET DEFAULT NOW();
+ALTER TABLE mytable ALTER int_column SET DEFAULT 1;
+ALTER TABLE mytable ALTER text_column SET DEFAULT 'value';
+ALTER TABLE mytable ALTER bool_column SET DEFAULT false;
+ALTER TABLE mytable ALTER other_column SET DEFAULT other_value;
+ALTER TABLE mytable ALTER other_column SET DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE mytable ALTER other_column SET DEFAULT a_function(a_parameter);
+ALTER TABLE mytable ALTER other_column SET DEFAULT a_function('a_parameter');
+ALTER TABLE mytable ALTER other_column DROP DEFAULT;
+ALTER TABLE IF EXISTS mytable ALTER date_column SET DEFAULT NOW();
+ALTER TABLE IF EXISTS mytable ALTER int_column SET DEFAULT 1;
+ALTER TABLE IF EXISTS mytable ALTER text_column SET DEFAULT 'value';
+ALTER TABLE IF EXISTS mytable ALTER bool_column SET DEFAULT false;
+ALTER TABLE IF EXISTS mytable ALTER other_column SET DEFAULT other_value;
+ALTER TABLE IF EXISTS mytable ALTER other_column SET DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE IF EXISTS mytable ALTER other_column SET DEFAULT a_function(a_parameter);
+ALTER TABLE IF EXISTS mytable ALTER other_column SET DEFAULT a_function('a_parameter');
+ALTER TABLE IF EXISTS mytable ALTER other_column DROP DEFAULT;
+
 ALTER TABLE distributors RENAME COLUMN address TO city;
 
 ALTER TABLE distributors RENAME TO suppliers;
@@ -54,6 +73,13 @@ ALTER TABLE distributors ADD CONSTRAINT dist_id_zipcode_key UNIQUE (dist_id, zip
 ALTER TABLE distributors ADD PRIMARY KEY (dist_id);
 
 ALTER TABLE distributors SET TABLESPACE fasttablespace;
+
+-- Issue:2071
+ALTER TABLE distributors SET (parameter_1 = 'value');
+
+ALTER TABLE distributors SET (parameter_1 = 1);
+
+ALTER TABLE distributors SET (parameter_1 = 1, parameter_2 = 'value');
 
 ALTER TABLE myschema.distributors SET SCHEMA yourschema;
 
@@ -102,3 +128,4 @@ ALTER TABLE IF EXISTS ONLY public.test OWNER TO CURRENT_ROLE;
 ALTER TABLE public.history ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
     SEQUENCE NAME public.history_id_seq
 );
+

@@ -11,7 +11,6 @@ from cached_property import cached_property
 from functools import partial
 
 from dbt.version import get_installed_version
-from dbt.config.profile import PROFILES_DIR
 from dbt.config.runtime import RuntimeConfig as DbtRuntimeConfig
 from dbt.adapters.factory import register_adapter
 from dbt.compilation import Compiler as DbtCompiler
@@ -19,7 +18,9 @@ from dbt.exceptions import (
     CompilationException as DbtCompilationException,
     FailedToConnectException as DbtFailedToConnectException,
 )
+from dbt import flags
 from jinja2 import Environment
+from jinja2_simple_tags import StandaloneTag
 
 from sqlfluff.core.errors import SQLTemplaterError, SQLTemplaterSkipFile
 
@@ -39,6 +40,11 @@ templater_logger = logging.getLogger("sqlfluff.templater")
 DBT_VERSION = get_installed_version()
 DBT_VERSION_STRING = DBT_VERSION.to_version_string()
 DBT_VERSION_TUPLE = (int(DBT_VERSION.major), int(DBT_VERSION.minor))
+
+if DBT_VERSION_TUPLE >= (1, 0):
+    from dbt.flags import PROFILES_DIR
+else:
+    from dbt.config.profile import PROFILES_DIR
 
 
 @dataclass
@@ -82,6 +88,15 @@ class DbtTemplater(JinjaTemplater):
     @cached_property
     def dbt_config(self):
         """Loads the dbt config."""
+        if self.dbt_version_tuple >= (1, 0):
+            flags.set_from_args(
+                "",
+                DbtConfigArgs(
+                    project_dir=self.project_dir,
+                    profiles_dir=self.profiles_dir,
+                    profile=self._get_profile(),
+                ),
+            )
         self.dbt_config = DbtRuntimeConfig.from_args(
             DbtConfigArgs(
                 project_dir=self.project_dir,
@@ -366,7 +381,18 @@ class DbtTemplater(JinjaTemplater):
 
         if not results:
             model_name = os.path.splitext(os.path.basename(fname))[0]
-            disabled_model = self.dbt_manifest.find_disabled_by_name(name=model_name)
+            if DBT_VERSION_TUPLE >= (1, 0):
+                disabled_model = None
+                for key, disabled_model_nodes in self.dbt_manifest.disabled.items():
+                    for disabled_model_node in disabled_model_nodes:
+                        if os.path.abspath(
+                            disabled_model_node.original_file_path
+                        ) == os.path.abspath(fname):
+                            disabled_model = disabled_model_node
+            else:
+                disabled_model = self.dbt_manifest.find_disabled_by_name(
+                    name=model_name
+                )
             if disabled_model and os.path.abspath(
                 disabled_model.original_file_path
             ) == os.path.abspath(fname):
@@ -409,6 +435,7 @@ class DbtTemplater(JinjaTemplater):
                             globals = args[2] if len(args) >= 3 else kwargs["globals"]
 
                             def make_template(in_str):
+                                env.add_extension(SnapshotExtension)
                                 return env.from_string(in_str, globals=globals)
 
                 return old_from_string(*args, **kwargs)
@@ -470,7 +497,7 @@ class DbtTemplater(JinjaTemplater):
         compiled_sql = compiled_sql + "\n" * n_trailing_newlines
 
         raw_sliced, sliced_file, templated_sql = self.slice_file(
-            node.raw_sql,
+            source_dbt_sql,
             compiled_sql,
             config=config,
             make_template=make_template,
@@ -484,7 +511,7 @@ class DbtTemplater(JinjaTemplater):
                 TemplatedFileSlice(
                     slice_type="literal",
                     source_slice=slice(
-                        len(node.raw_sql) - n_trailing_newlines, len(node.raw_sql)
+                        len(source_dbt_sql) - n_trailing_newlines, len(source_dbt_sql)
                     ),
                     templated_slice=slice(
                         len(templated_sql) - n_trailing_newlines, len(templated_sql)
@@ -493,7 +520,7 @@ class DbtTemplater(JinjaTemplater):
             )
         return (
             TemplatedFile(
-                source_str=node.raw_sql,
+                source_str=source_dbt_sql,
                 templated_str=templated_sql,
                 fname=fname,
                 sliced_file=sliced_file,
@@ -508,3 +535,21 @@ class DbtTemplater(JinjaTemplater):
         # DbtTemplater uses the original heuristic-based template slicer.
         # TODO: Can it be updated to use TemplateTracer?
         return slice_template(in_str, cls._get_jinja_env())
+
+
+class SnapshotExtension(StandaloneTag):
+    """Dummy "snapshot" tags so raw dbt templates will parse.
+
+    Context: dbt snapshots (https://docs.getdbt.com/docs/building-a-dbt-project/snapshots/#example)
+    use custom Jinja "snapshot" and "endsnapshot" tags. However, dbt does not
+    actually register those tags with Jinja. Instead, it finds and removes these
+    tags during a preprocessing step. However, DbtTemplater needs those tags to
+    actually parse, because JinjaTracer creates and uses Jinja to process
+    another template similar to the original one.
+    """
+
+    tags = {"snapshot", "endsnapshot"}
+
+    def render(self, format_string=None):
+        """Dummy method that renders the tag."""
+        return ""

@@ -57,6 +57,17 @@ class DatePartFunctionNameSegment(BaseSegment):
     match_grammar = OneOf("DATEADD", "DATEDIFF")
 
 
+@redshift_dialect.segment(replace=True)
+class FunctionSegment(BaseSegment):
+    """A scalar or aggregate function.
+
+    Revert back to the ANSI definition to support ignore nulls
+    """
+
+    type = "function"
+    match_grammar = ansi_dialect.get_segment("FunctionSegment").match_grammar.copy()
+
+
 @redshift_dialect.segment()
 class ColumnEncodingSegment(BaseSegment):
     """ColumnEncoding segment.
@@ -133,17 +144,6 @@ class ColumnConstraintSegment(BaseSegment):
             Bracketed(Ref("ColumnReferenceSegment"), optional=True),
         ),
     )
-
-
-@redshift_dialect.segment(replace=True)
-class FunctionSegment(BaseSegment):
-    """A scalar or aggregate function.
-
-    Revert back to the ANSI definition to support ignore nulls
-    """
-
-    type = "function"
-    match_grammar = ansi_dialect.get_segment("FunctionSegment").match_grammar.copy()
 
 
 @redshift_dialect.segment()
@@ -458,6 +458,37 @@ class AccessStatementSegment(BaseSegment):
     )
 
 
+@redshift_dialect.segment(replace=True)
+class InsertStatementSegment(BaseSegment):
+    """An`INSERT` statement.
+
+    Redshift has two versions of insert statements:
+        - https://docs.aws.amazon.com/redshift/latest/dg/r_INSERT_30.html
+        - https://docs.aws.amazon.com/redshift/latest/dg/r_INSERT_external_table.html
+    """
+
+    # TODO: This logic can be streamlined. However, there are some odd parsing issues.
+    # See https://github.com/sqlfluff/sqlfluff/pull/1896
+
+    type = "insert_statement"
+    match_grammar = Sequence(
+        "INSERT",
+        "INTO",
+        Ref("TableReferenceSegment"),
+        OneOf(
+            OptionallyBracketed(Ref("SelectableGrammar")),
+            Sequence("DEFAULT", "VALUES"),
+            Sequence(
+                Ref("BracketedColumnReferenceListGrammar", optional=True),
+                OneOf(
+                    Ref("ValuesClauseSegment"),
+                    OptionallyBracketed(Ref("SelectableGrammar")),
+                ),
+            ),
+        ),
+    )
+
+
 # Adding Redshift specific statements
 @redshift_dialect.segment(replace=True)
 class StatementSegment(BaseSegment):
@@ -470,9 +501,206 @@ class StatementSegment(BaseSegment):
             Ref("TableAttributeSegment"),
             Ref("ColumnAttributeSegment"),
             Ref("ColumnEncodingSegment"),
+            Ref("CreateUserSegment"),
+            Ref("CreateGroupSegment"),
+            Ref("AlterUserSegment"),
+            Ref("AlterGroupSegment"),
         ],
     )
 
     match_grammar = redshift_dialect.get_segment(
         "StatementSegment"
     ).match_grammar.copy()
+
+
+@redshift_dialect.segment()
+class CreateUserSegment(BaseSegment):
+    """`CREATE USER` statement.
+
+    https://docs.aws.amazon.com/redshift/latest/dg/r_CREATE_USER.html
+    """
+
+    type = "create_user"
+
+    match_grammar = Sequence(
+        "CREATE",
+        "USER",
+        Ref("NakedIdentifierSegment"),
+        Ref.keyword("WITH", optional=True),
+        "PASSWORD",
+        OneOf(Ref("QuotedLiteralSegment"), "DISABLE"),
+        AnyNumberOf(
+            OneOf(
+                "CREATEDB",
+                "NOCREATEDB",
+            ),
+            OneOf(
+                "CREATEUSER",
+                "NOCREATEUSER",
+            ),
+            Sequence(
+                "SYSLOG",
+                "ACCESS",
+                OneOf(
+                    "RESTRICTED",
+                    "UNRESTRICTED",
+                ),
+            ),
+            Sequence("IN", "GROUP", Delimited(Ref("NakedIdentifierSegment"))),
+            Sequence("VALID", "UNTIL", Ref("QuotedLiteralSegment")),
+            Sequence(
+                "CONNECTION",
+                "LIMIT",
+                OneOf(
+                    Ref("NumericLiteralSegment"),
+                    "UNLIMITED",
+                ),
+            ),
+            Sequence(
+                "SESSION",
+                "TIMEOUT",
+                Ref("NumericLiteralSegment"),
+            ),
+        ),
+    )
+
+
+@redshift_dialect.segment()
+class CreateGroupSegment(BaseSegment):
+    """`CREATE GROUP` statement.
+
+    https://docs.aws.amazon.com/redshift/latest/dg/r_CREATE_GROUP.html
+    """
+
+    type = "create_group"
+
+    match_grammar = Sequence(
+        "CREATE",
+        "GROUP",
+        Ref("NakedIdentifierSegment"),
+        Sequence(
+            Ref.keyword("WITH", optional=True),
+            "USER",
+            Delimited(
+                Ref("NakedIdentifierSegment"),
+            ),
+            optional=True,
+        ),
+    )
+
+
+@redshift_dialect.segment()
+class AlterUserSegment(BaseSegment):
+    """`ALTER USER` statement.
+
+    https://docs.aws.amazon.com/redshift/latest/dg/r_ALTER_USER.html
+    """
+
+    type = "alter_user"
+
+    match_grammar = Sequence(
+        "ALTER",
+        "USER",
+        Ref("NakedIdentifierSegment"),
+        Ref.keyword("WITH", optional=True),
+        AnyNumberOf(
+            OneOf(
+                "CREATEDB",
+                "NOCREATEDB",
+            ),
+            OneOf(
+                "CREATEUSER",
+                "NOCREATEUSER",
+            ),
+            Sequence(
+                "SYSLOG",
+                "ACCESS",
+                OneOf(
+                    "RESTRICTED",
+                    "UNRESTRICTED",
+                ),
+            ),
+            Sequence(
+                "PASSWORD",
+                OneOf(
+                    Ref("QuotedLiteralSegment"),
+                    "DISABLE",
+                ),
+                Sequence("VALID", "UNTIL", Ref("QuotedLiteralSegment"), optional=True),
+            ),
+            Sequence(
+                "RENAME",
+                "TO",
+                Ref("NakedIdentifierSegment"),
+            ),
+            Sequence(
+                "CONNECTION",
+                "LIMIT",
+                OneOf(
+                    Ref("NumericLiteralSegment"),
+                    "UNLIMITED",
+                ),
+            ),
+            OneOf(
+                Sequence(
+                    "SESSION",
+                    "TIMEOUT",
+                    Ref("NumericLiteralSegment"),
+                ),
+                Sequence(
+                    "RESET",
+                    "SESSION",
+                    "TIMEOUT",
+                ),
+            ),
+            OneOf(
+                Sequence(
+                    "SET",
+                    Ref("NakedIdentifierSegment"),
+                    OneOf(
+                        "TO",
+                        Ref("EqualsSegment"),
+                    ),
+                    OneOf(
+                        "DEFAULT",
+                        Ref("LiteralGrammar"),
+                    ),
+                ),
+                Sequence(
+                    "RESET",
+                    Ref("NakedIdentifierSegment"),
+                ),
+            ),
+            min_times=1,
+        ),
+    )
+
+
+@redshift_dialect.segment()
+class AlterGroupSegment(BaseSegment):
+    """`ALTER GROUP` statement.
+
+    https://docs.aws.amazon.com/redshift/latest/dg/r_ALTER_GROUP.html
+    """
+
+    type = "alter_group"
+
+    match_grammar = Sequence(
+        "ALTER",
+        "GROUP",
+        Ref("NakedIdentifierSegment"),
+        OneOf(
+            Sequence(
+                OneOf("ADD", "DROP"),
+                "USER",
+                Delimited(
+                    Ref("NakedIdentifierSegment"),
+                ),
+            ),
+            Sequence(
+                "RENAME",
+                "TO",
+                Ref("NakedIdentifierSegment"),
+            ),
+        ),
+    )

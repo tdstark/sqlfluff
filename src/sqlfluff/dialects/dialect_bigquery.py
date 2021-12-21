@@ -8,6 +8,7 @@ https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#string_and
 
 import itertools
 
+from sqlfluff.core.dialects import load_raw_dialect
 from sqlfluff.core.parser import (
     Anything,
     BaseSegment,
@@ -30,10 +31,9 @@ from sqlfluff.core.parser import (
     OptionallyBracketed,
     Indent,
     Dedent,
+    Matchable,
 )
-
-from sqlfluff.core.dialects import load_raw_dialect
-
+from sqlfluff.core.parser.segments.base import BracketedSegment
 from sqlfluff.dialects.dialect_bigquery_keywords import (
     bigquery_reserved_keywords,
     bigquery_unreserved_keywords,
@@ -122,6 +122,31 @@ bigquery_dialect.add(
         name="atsign_literal",
         type="literal",
         trim_chars=("@",),
+    ),
+    # Add a Full equivalent which also allow keywords
+    NakedIdentifierSegmentFull=RegexParser(
+        r"[A-Z0-9_]*[A-Z][A-Z0-9_]*",
+        CodeSegment,
+        name="naked_identifier_all",
+        type="identifier",
+    ),
+    SingleIdentifierGrammarFull=OneOf(
+        Ref("NakedIdentifierSegment"),
+        Ref("QuotedIdentifierSegment"),
+        Ref("NakedIdentifierSegmentFull"),
+    ),
+    DefaultDeclareOptionsGrammar=Sequence(
+        "DEFAULT",
+        OneOf(
+            Ref("LiteralGrammar"),
+            Bracketed(Ref("SelectStatementSegment")),
+            Ref("BareFunctionSegment"),
+            Ref("FunctionSegment"),
+            Ref("ArrayLiteralSegment"),
+            Ref("TypelessStructSegment"),
+            Ref("TupleSegment"),
+            Ref("BaseExpressionElementGrammar"),
+        ),
     ),
 )
 
@@ -575,17 +600,24 @@ class TypelessStructSegment(BaseSegment):
         "STRUCT",
         Bracketed(
             Delimited(
-                AnyNumberOf(
-                    Sequence(
-                        Ref("BaseExpressionElementGrammar"),
-                        Ref("AliasExpressionSegment", optional=True),
-                    ),
+                Sequence(
+                    Ref("BaseExpressionElementGrammar"),
+                    Ref("AliasExpressionSegment", optional=True),
                 ),
-                delimiter=Ref("CommaSegment"),
             ),
-            optional=True,
         ),
     )
+
+
+@bigquery_dialect.segment()
+class TupleSegment(BaseSegment):
+    """Expression to construct a TUPLE.
+
+    https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#tuple_syntax
+    """
+
+    type = "tuple"
+    match_grammar = Bracketed(Delimited(Ref("BaseExpressionElementGrammar")))
 
 
 @bigquery_dialect.segment()
@@ -633,9 +665,47 @@ ObjectReferenceSegment = ansi_dialect.get_segment("ObjectReferenceSegment")
 
 @bigquery_dialect.segment(replace=True)
 class ColumnReferenceSegment(ObjectReferenceSegment):  # type: ignore
-    """A reference to column, field or alias."""
+    """A reference to column, field or alias.
+
+    We override this for BigQuery to allow keywords in structures
+    (using Full segments) and to properly return references for objects.
+
+    Ref: https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical
+    "A reserved keyword must be a quoted identifier if it is a standalone
+    keyword or the first component of a path expression. It may be unquoted
+    as the second or later component of a path expression."
+    """
 
     type = "column_reference"
+    match_grammar: Matchable = Sequence(
+        Ref("SingleIdentifierGrammar"),
+        Sequence(
+            OneOf(Ref("DotSegment"), Sequence(Ref("DotSegment"), Ref("DotSegment"))),
+            Delimited(
+                Ref("SingleIdentifierGrammarFull"),
+                delimiter=OneOf(
+                    Ref("DotSegment"), Sequence(Ref("DotSegment"), Ref("DotSegment"))
+                ),
+                terminator=OneOf(
+                    "ON",
+                    "AS",
+                    "USING",
+                    Ref("CommaSegment"),
+                    Ref("CastOperatorSegment"),
+                    Ref("StartSquareBracketSegment"),
+                    Ref("StartBracketSegment"),
+                    Ref("BinaryOperatorGrammar"),
+                    Ref("ColonSegment"),
+                    Ref("DelimiterSegment"),
+                    BracketedSegment,
+                ),
+                allow_gaps=False,
+            ),
+            allow_gaps=False,
+            optional=True,
+        ),
+        allow_gaps=False,
+    )
 
     def extract_possible_references(self, level):
         """Extract possible references of a given level."""
@@ -714,16 +784,13 @@ class DeclareStatementSegment(BaseSegment):
     parse_grammar = Sequence(
         "DECLARE",
         Delimited(Ref("NakedIdentifierSegment")),
-        Ref("DatatypeIdentifierSegment"),
-        Sequence(
-            "DEFAULT",
-            OneOf(
-                Ref("LiteralGrammar"),
-                Bracketed(Ref("SelectStatementSegment")),
-                Ref("BareFunctionSegment"),
-                Ref("FunctionSegment"),
+        OneOf(
+            Ref("DatatypeSegment"),
+            Ref("DefaultDeclareOptionsGrammar"),
+            Sequence(
+                Ref("DatatypeSegment"),
+                Ref("DefaultDeclareOptionsGrammar"),
             ),
-            optional=True,
         ),
     )
 
@@ -744,25 +811,24 @@ class SetStatementSegment(BaseSegment):
             Bracketed(Delimited(Ref("NakedIdentifierSegment"))),
         ),
         Ref("EqualsSegment"),
-        OneOf(
-            Delimited(
-                OneOf(
-                    Ref("LiteralGrammar"),
-                    Bracketed(Ref("SelectStatementSegment")),
-                    Ref("BareFunctionSegment"),
-                    Ref("FunctionSegment"),
-                    Bracketed(
-                        Delimited(
-                            OneOf(
-                                Ref("LiteralGrammar"),
-                                Bracketed(Ref("SelectStatementSegment")),
-                                Ref("BareFunctionSegment"),
-                                Ref("FunctionSegment"),
-                            )
+        Delimited(
+            OneOf(
+                Ref("LiteralGrammar"),
+                Bracketed(Ref("SelectStatementSegment")),
+                Ref("BareFunctionSegment"),
+                Ref("FunctionSegment"),
+                Bracketed(
+                    Delimited(
+                        OneOf(
+                            Ref("LiteralGrammar"),
+                            Bracketed(Ref("SelectStatementSegment")),
+                            Ref("BareFunctionSegment"),
+                            Ref("FunctionSegment"),
                         )
-                    ),
-                )
-            )
+                    )
+                ),
+                Ref("ArrayLiteralSegment"),
+            ),
         ),
     )
 
@@ -909,9 +975,7 @@ class FromUnpivotExpressionSegment(BaseSegment):
     """
 
     type = "from_unpivot_expression"
-    match_grammar = Sequence("UNPIVOT", Bracketed(Anything()))
-
-    parse_grammar = Sequence(
+    match_grammar = Sequence(
         "UNPIVOT",
         Sequence(
             OneOf("INCLUDE", "EXCLUDE"),
