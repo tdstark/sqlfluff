@@ -379,7 +379,7 @@ class AccessStatementSegment(BaseSegment):
                 Ref.keyword("PRIVILEGES", optional=True),
                 "ON",
                 "SCHEMA",
-                Delimited(Ref("FunctionReferenceSegment"),
+                Delimited(Ref("FunctionSegment"),
                 Delimited(
                     OneOf(  # This might not be needed
                         Sequence(Ref("NakedIdentifierSegment"), Sequence("WITH", "GRANT", "OPTION", optional=True)),
