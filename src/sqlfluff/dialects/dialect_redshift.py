@@ -476,7 +476,29 @@ class AccessStatementSegment(BaseSegment):
             ),
 
             # Redshift Spectrum - Table
-            Sequence(),
+            Sequence(
+                OneOf(
+                    Delimited(
+                        "SELECT",
+                        "ALTER",
+                        "DROP",
+                        "DELETE",
+                        "INSERT"
+                    ),
+                    "ALL"
+                ),
+                Ref.keyword("PRIVILEGES", optional=True),
+                "ON",
+                "EXTERNAL",
+                "TABLE",
+                Delimited(Ref("TableReferenceSegment")),
+                "TO",
+                OneOf(
+                    Delimited(Sequence("IAM_ROLE", Ref("NakedIdentifierSegment"))),
+                    "PUBLIC"
+                ),
+                Sequence("WITH", "GRANT", "OPTION", optional=True)
+            ),
 
             # Redshift Spectrum - Schema
             Sequence()
