@@ -452,15 +452,33 @@ class AccessStatementSegment(BaseSegment):
                         "ALL",
                         "COPY",
                         "UNLOAD",
-                        "EXTERNAL",
-                        "FUNCTION",
-                        "CREATE",
-                        "MODEL"
+                        Sequence("EXTERNAL", "FUNCTION"),
+                        Sequence("CREATE", "MODEL")
                     )
                 )
             ),
 
-            # Redshift Spectrum
+            # Redshift Spectrum - Column-level permissions on Table
+            Sequence(
+                OneOf(
+                    "SELECT",
+                    "ALL"
+                ),
+                Ref.keyword("PRIVILEGES", optional=True),
+                Bracketed(Delimited(Ref("ColumnReferenceSegment"))),
+                "ON",
+                "EXTERNAL",
+                "TABLE",
+                Ref("TableReferenceSegment"),
+                "TO",
+                Delimited(Sequence("IAM_ROLE", Ref("NakedIdentifierSegment"))),
+                Sequence("WITH", "GRANT", "OPTION", optional=True)
+            ),
+
+            # Redshift Spectrum - Table
+            Sequence(),
+
+            # Redshift Spectrum - Schema
             Sequence()
         )
     )
