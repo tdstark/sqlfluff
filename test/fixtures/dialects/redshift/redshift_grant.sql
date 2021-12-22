@@ -1,5 +1,6 @@
 GRANT INSERT ON TABLE factdata.table_one TO test_user;
-GRANT DELETE ON TABLE factdata.table_one TO test_user;
+GRANT UPDATE ON TABLE factdata.table_one, factdata.table_two TO test_user;
+GRANT DELETE ON TABLE factdata.table_one TO test_user, GROUP test_users;
 GRANT DROP ON TABLE table_one TO GROUP test_users;
 GRANT REFERENCES ON TABLE table_one TO PUBLIC;
 
