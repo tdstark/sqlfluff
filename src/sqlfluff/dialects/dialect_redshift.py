@@ -313,11 +313,9 @@ class AccessStatementSegment(BaseSegment):
                 ),
                 "TO",
                 Delimited(
-                    OneOf(  # This might not be needed
-                        Sequence(Ref("NakedIdentifierSegment"), Sequence("WITH", "GRANT", "OPTION", optional=True)),
-                        Sequence("GROUP", Ref("NakedIdentifierSegment")),
-                        "PUBLIC"
-                    )
+                    Sequence(Ref("NakedIdentifierSegment"), Sequence("WITH", "GRANT", "OPTION", optional=True)),
+                    Sequence("GROUP", Ref("NakedIdentifierSegment")),
+                    "PUBLIC"
                 )
             ),
 
@@ -337,11 +335,9 @@ class AccessStatementSegment(BaseSegment):
                 Delimited(Ref("DatabaseReferenceSegment")),
                 "TO",
                 Delimited(
-                    OneOf(  # This might not be needed
-                        Sequence(Ref("NakedIdentifierSegment"), Sequence("WITH", "GRANT", "OPTION", optional=True)),
-                        Sequence("GROUP", Ref("NakedIdentifierSegment")),
-                        "PUBLIC"
-                    )
+                    Sequence(Ref("NakedIdentifierSegment"), Sequence("WITH", "GRANT", "OPTION", optional=True)),
+                    Sequence("GROUP", Ref("NakedIdentifierSegment")),
+                    "PUBLIC"
                 )
             ),
 
@@ -360,11 +356,9 @@ class AccessStatementSegment(BaseSegment):
                 Delimited(Ref("SchemaReferenceSegment")),
                 "TO",
                 Delimited(
-                    OneOf(  # This might not be needed
-                        Sequence(Ref("NakedIdentifierSegment"), Sequence("WITH", "GRANT", "OPTION", optional=True)),
-                        Sequence("GROUP", Ref("NakedIdentifierSegment")),
-                        "PUBLIC"
-                    )
+                    Sequence(Ref("NakedIdentifierSegment"), Sequence("WITH", "GRANT", "OPTION", optional=True)),
+                    Sequence("GROUP", Ref("NakedIdentifierSegment")),
+                    "PUBLIC"
                 )
             ),
 
@@ -382,11 +376,9 @@ class AccessStatementSegment(BaseSegment):
                 ),
                 "TO",
                 Delimited(
-                    OneOf(  # This might not be needed
-                        Sequence(Ref("NakedIdentifierSegment"), Sequence("WITH", "GRANT", "OPTION", optional=True)),
-                        Sequence("GROUP", Ref("NakedIdentifierSegment")),
-                        "PUBLIC"
-                    )
+                    Sequence(Ref("NakedIdentifierSegment"), Sequence("WITH", "GRANT", "OPTION", optional=True)),
+                    Sequence("GROUP", Ref("NakedIdentifierSegment")),
+                    "PUBLIC"
                 )
 
             ),
@@ -399,11 +391,9 @@ class AccessStatementSegment(BaseSegment):
                 Delimited("plpythonu", "sql"),
                 "TO",
                 Delimited(
-                    OneOf(  # This might not be needed
-                        Sequence(Ref("NakedIdentifierSegment"), Sequence("WITH", "GRANT", "OPTION", optional=True)),
-                        Sequence("GROUP", Ref("NakedIdentifierSegment")),
-                        "PUBLIC"
-                    )
+                    Sequence(Ref("NakedIdentifierSegment"), Sequence("WITH", "GRANT", "OPTION", optional=True)),
+                    Sequence("GROUP", Ref("NakedIdentifierSegment")),
+                    "PUBLIC"
                 )
             ),
 
@@ -421,11 +411,9 @@ class AccessStatementSegment(BaseSegment):
                 Delimited(Ref("TableReferenceSegment")),
                 "TO",
                 Delimited(
-                    OneOf(  # This might not be needed
-                        Ref("NakedIdentifierSegment"),
-                        Sequence("GROUP", Ref("NakedIdentifierSegment")),
-                        "PUBLIC"
-                    )
+                    Ref("NakedIdentifierSegment"),
+                    Sequence("GROUP", Ref("NakedIdentifierSegment")),
+                    "PUBLIC"
                 )
             ),
 
@@ -440,11 +428,9 @@ class AccessStatementSegment(BaseSegment):
                 ),
                 "TO",
                 Delimited(
-                    OneOf(  # This might not be needed
-                        Ref("NakedIdentifierSegment"),
-                        Sequence("GROUP", Ref("NakedIdentifierSegment")),
-                        "PUBLIC"
-                    )
+                    Ref("NakedIdentifierSegment"),
+                    Sequence("GROUP", Ref("NakedIdentifierSegment")),
+                    "PUBLIC"
                 ),
                 "FOR",
                 Delimited(
