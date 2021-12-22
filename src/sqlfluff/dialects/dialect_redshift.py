@@ -287,8 +287,14 @@ class AccessStatementSegment(BaseSegment):
     As specified in: https://docs.aws.amazon.com/redshift/latest/dg/r_GRANT.html
 
     """
-
     type = "access_statement"
+
+    _typical_users = Delimited(
+                        Sequence(Ref("NakedIdentifierSegment"), Sequence("WITH", "GRANT", "OPTION", optional=True)),
+                        Sequence("GROUP", Ref("NakedIdentifierSegment")),
+                        "PUBLIC"
+                     )
+
     match_grammar = Sequence(
         "GRANT",
         OneOf(
@@ -312,11 +318,7 @@ class AccessStatementSegment(BaseSegment):
                     Sequence("ALL", "TABLES", "IN", "SCHEMA", Delimited(Ref("SchemaReferenceSegment")))
                 ),
                 "TO",
-                Delimited(
-                    Sequence(Ref("NakedIdentifierSegment"), Sequence("WITH", "GRANT", "OPTION", optional=True)),
-                    Sequence("GROUP", Ref("NakedIdentifierSegment")),
-                    "PUBLIC"
-                )
+                _typical_users
             ),
 
             # Database
@@ -334,11 +336,7 @@ class AccessStatementSegment(BaseSegment):
                 "DATABASE",
                 Delimited(Ref("DatabaseReferenceSegment")),
                 "TO",
-                Delimited(
-                    Sequence(Ref("NakedIdentifierSegment"), Sequence("WITH", "GRANT", "OPTION", optional=True)),
-                    Sequence("GROUP", Ref("NakedIdentifierSegment")),
-                    "PUBLIC"
-                )
+                _typical_users
             ),
 
             # Schema
@@ -355,11 +353,7 @@ class AccessStatementSegment(BaseSegment):
                 "SCHEMA",
                 Delimited(Ref("SchemaReferenceSegment")),
                 "TO",
-                Delimited(
-                    Sequence(Ref("NakedIdentifierSegment"), Sequence("WITH", "GRANT", "OPTION", optional=True)),
-                    Sequence("GROUP", Ref("NakedIdentifierSegment")),
-                    "PUBLIC"
-                )
+                _typical_users
             ),
 
             # Function/Procedure
@@ -375,12 +369,7 @@ class AccessStatementSegment(BaseSegment):
                     Sequence("ALL", OneOf("FUNCTIONS", "PROCEDURES"), "IN", "SCHEMA", Delimited(Ref("SchemaReferenceSegment")))
                 ),
                 "TO",
-                Delimited(
-                    Sequence(Ref("NakedIdentifierSegment"), Sequence("WITH", "GRANT", "OPTION", optional=True)),
-                    Sequence("GROUP", Ref("NakedIdentifierSegment")),
-                    "PUBLIC"
-                )
-
+                _typical_users
             ),
 
             # Language
@@ -390,11 +379,7 @@ class AccessStatementSegment(BaseSegment):
                 "LANGUAGE",
                 Delimited("plpythonu", "sql"),
                 "TO",
-                Delimited(
-                    Sequence(Ref("NakedIdentifierSegment"), Sequence("WITH", "GRANT", "OPTION", optional=True)),
-                    Sequence("GROUP", Ref("NakedIdentifierSegment")),
-                    "PUBLIC"
-                )
+                _typical_users
             ),
 
             # Column-level privileges
