@@ -3030,6 +3030,7 @@ class StatementSegment(BaseSegment):
         Ref("DropSequenceStatementSegment"),
         Ref("CreateTriggerStatementSegment"),
         Ref("DropTriggerStatementSegment"),
+        Ref("AlterGroupSegment")
     )
 
     def get_table_references(self):
@@ -3181,6 +3182,26 @@ class CreateSequenceStatementSegment(BaseSegment):
         AnyNumberOf(Ref("CreateSequenceOptionsSegment"), optional=True),
     )
 
+
+@ansi_dialect.segment()
+class AlterGroupSegment(BaseSegment):
+    """Options for Alter Group statement.
+
+    As specified in https://docs.aws.amazon.com/redshift/latest/dg/r_ALTER_GROUP.html
+    """
+
+    type = "alter_group_segment"
+
+    match_grammar = Sequence(
+        "ALTER",
+        "GROUP",
+        Ref("ObjectReferenceSegment"),
+        OneOf(
+            Sequence("ADD", "USER", Ref("ObjectReferenceSegment")),
+            Sequence("DROP", "USER", Ref("ObjectReferenceSegment")),
+            Sequence("RENAME", "TO", Ref("ObjectReferenceSegment")),
+        )
+    )
 
 @ansi_dialect.segment()
 class AlterSequenceOptionsSegment(BaseSegment):
