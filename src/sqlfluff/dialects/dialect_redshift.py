@@ -289,15 +289,13 @@ class AccessStatementSegment(BaseSegment):
     """
     type = "access_statement"
 
-    _typical_users = Delimited(
+    _role_specification = Delimited(
                         Sequence(Ref("NakedIdentifierSegment"), Sequence("WITH", "GRANT", "OPTION", optional=True)),
                         Sequence("GROUP", Ref("NakedIdentifierSegment")),
                         "PUBLIC"
                      )
 
-    match_grammar = Sequence(
-        "GRANT",
-        OneOf(
+    _permissions = OneOf(
             # Table
             Sequence(
                 OneOf(
@@ -318,7 +316,7 @@ class AccessStatementSegment(BaseSegment):
                     Sequence("ALL", "TABLES", "IN", "SCHEMA", Delimited(Ref("SchemaReferenceSegment")))
                 ),
                 "TO",
-                _typical_users
+                _role_specification
             ),
 
             # Database
@@ -336,7 +334,7 @@ class AccessStatementSegment(BaseSegment):
                 "DATABASE",
                 Delimited(Ref("DatabaseReferenceSegment")),
                 "TO",
-                _typical_users
+                _role_specification
             ),
 
             # Schema
@@ -353,7 +351,7 @@ class AccessStatementSegment(BaseSegment):
                 "SCHEMA",
                 Delimited(Ref("SchemaReferenceSegment")),
                 "TO",
-                _typical_users
+                _role_specification
             ),
 
             # Function/Procedure
@@ -369,7 +367,7 @@ class AccessStatementSegment(BaseSegment):
                     Sequence("ALL", OneOf("FUNCTIONS", "PROCEDURES"), "IN", "SCHEMA", Delimited(Ref("SchemaReferenceSegment")))
                 ),
                 "TO",
-                _typical_users
+                _role_specification
             ),
 
             # Language
@@ -379,7 +377,7 @@ class AccessStatementSegment(BaseSegment):
                 "LANGUAGE",
                 Delimited("plpythonu", "sql"),
                 "TO",
-                _typical_users
+                _role_specification
             ),
 
             # Column-level privileges
@@ -491,6 +489,10 @@ class AccessStatementSegment(BaseSegment):
                 Sequence("WITH", "GRANT", "OPTION", optional=True)
             ),
         )
+
+    match_grammar = OneOf(
+        Sequence("GRANT", _permissions),
+        Sequence("REVOKE", Sequence("GRANT", "OPTION", "FOR", optional=True), _permissions, OneOf("CASCADE", "RESTRICT", optional=True))
     )
 
 
