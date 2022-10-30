@@ -1,0 +1,25 @@
+file:
+  statement:
+    select_statement:
+      select_clause:
+        - keyword: SELECT
+        - select_clause_element:
+            literal: "'2006-06-13'"
+        - comma: ","
+        - select_clause_element:
+            literal: "'2006-06-13'"
+        - comma: ","
+        - select_clause_element:
+            literal: "'2006-06-18'"
+        - comma: ","
+        - select_clause_element:
+            literal: "'01-01-15'"
+        - comma: ","
+        - select_clause_element:
+            literal: "'2015-01-05'"
+        - comma: ","
+        - select_clause_element:
+            literal: "'0.5'"
+        - comma: ","
+        - select_clause_element:
+            literal: "'00000000-0000-0000-0000-000000000000'"

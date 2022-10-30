@@ -127,13 +127,7 @@ class JinjaTemplater(PythonTemplater):
             )
         return macro_ctx
 
-    def _extract_libraries_from_config(self, config):
-        library_path = config.get_section(
-            (self.templater_selector, self.name, "library_path")
-        )
-        if not library_path:
-            return {}
-
+    def _extract_libraries_from_path(self, library_path: str):
         libraries = JinjaTemplater.Libraries()
 
         # If library_path has __init__.py we parse it as one module, else we parse it
@@ -175,6 +169,15 @@ class JinjaTemplater(PythonTemplater):
 
         # remove magic methods from result
         return {k: v for k, v in libraries.__dict__.items() if not k.startswith("__")}
+
+    def _extract_libraries_from_config(self, config):
+        library_path = config.get_section(
+            (self.templater_selector, self.name, "library_path")
+        )
+        if not library_path:
+            return {}
+
+        return self._extract_libraries_from_path(library_path=library_path)
 
     @staticmethod
     def _generate_dbt_builtins():
@@ -283,6 +286,7 @@ class JinjaTemplater(PythonTemplater):
         """Get the templating context from the config."""
         # Load the context
         env = kw.pop("env")
+
         live_context = super().get_context(fname=fname, config=config)
         # Apply dbt builtin functions if we're allowed.
         if config:
@@ -302,6 +306,21 @@ class JinjaTemplater(PythonTemplater):
                     # Only apply if it hasn't already been set at this stage.
                     if name not in live_context:
                         live_context[name] = dbt_builtins[name]
+
+            apply_airflow_builtins = config.get_section(
+                (self.templater_selector, self.name, "apply_airflow_builtins")
+            )
+            if apply_airflow_builtins:
+                import sqlfluff.core.templaters.jinja_builtins.airflow as airflow_builtins  # noqa
+
+                live_context.update(
+                    self._extract_libraries_from_path(
+                        library_path=airflow_builtins.__path__[0]
+                    )
+                )
+
+                # TODO: Find a netter way to get filters to work when using library
+                env.filters.update(airflow_builtins.filters.generate_jinja_filters())
 
         # Load macros from path (if applicable)
         if config:
