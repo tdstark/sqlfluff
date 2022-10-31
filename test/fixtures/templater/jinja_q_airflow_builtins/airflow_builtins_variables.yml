@@ -4,112 +4,112 @@ file:
       select_clause:
         - keyword: SELECT
         - select_clause_element:
-            literal: "'2006-06-13 08:30:00+00:00'"
+            quoted_literal: "'2006-06-13 08:30:00+00:00'"
         - comma: ","
         - select_clause_element:
-            literal: "'2006-06-14 08:30:00+00:00'"
+            quoted_literal: "'2006-06-14 08:30:00+00:00'"
         - comma: ","
         - select_clause_element:
-            literal: "'2006-06-13'"
+            quoted_literal: "'2006-06-13'"
         - comma: ","
         - select_clause_element:
-            literal: "'20060613'"
+            quoted_literal: "'20060613'"
         - comma: ","
         - select_clause_element:
-            literal: "'2006-06-13T08:30:00+00:00'"
+            quoted_literal: "'2006-06-13T08:30:00+00:00'"
         - comma: ","
         - select_clause_element:
-            literal: "'20060613T083000+0000'"
+            quoted_literal: "'20060613T083000+0000'"
         - comma: ","
         - select_clause_element:
-            literal: "'20060613T083000'"
+            quoted_literal: "'20060613T083000'"
         - comma: ","
         - select_clause_element:
-            literal: "'2006-06-12 08:30:00+00:00'"
+            quoted_literal: "'2006-06-12 08:30:00+00:00'"
         - comma: ","
         - select_clause_element:
-            literal: "'2006-06-13 08:30:00+00:00'"
+            quoted_literal: "'2006-06-13 08:30:00+00:00'"
         - comma: ","
         - select_clause_element:
-            literal: "'2006-06-12 08:30:00+00:00'"
+            quoted_literal: "'2006-06-12 08:30:00+00:00'"
         - comma: ","
         - select_clause_element:
-            literal: "'sample_dag'"
+            quoted_literal: "'sample_dag'"
         - comma: ","
         - select_clause_element:
-            literal: "'False'"
+            quoted_literal: "'False'"
         - comma: ","
         - select_clause_element:
-            literal: "'sample_task'"
+            quoted_literal: "'sample_task'"
         - comma: ","
         - select_clause_element:
-            literal: "'sample_dag__sample_task__19700101'"
+            quoted_literal: "'sample_dag__sample_task_instance__19700101'"
         - comma: ","
         - select_clause_element:
-            literal: "'sample_dag'"
+            quoted_literal: "'sample_dag'"
         - comma: ","
         - select_clause_element:
-            literal: "'sample_task'"
+            quoted_literal: "'sample_task_instance'"
         - comma: ","
         - select_clause_element:
-            literal: "'sample_dag__sample_task__19700101'"
+            quoted_literal: "'sample_dag__sample_task_instance__19700101'"
         - comma: ","
         - select_clause_element:
-            literal: "'sample_dag__sample_task__19700101'"
+            quoted_literal: "'sample_dag__sample_task_instance__19700101'"
         - comma: ","
         - select_clause_element:
-            literal: "'TBD'"
+            quoted_literal: "'TBD'"
         - comma: ","
         - select_clause_element:
-            literal: "'sample_dag__run_id'"
+            quoted_literal: "'sample_dag__run_id'"
         - comma: ","
         - select_clause_element:
-            literal: "'sample_dag__run_id'"
+            quoted_literal: "'sample_dag__run_id'"
         - comma: ","
         - select_clause_element:
-            literal: "'sample_dag'"
+            quoted_literal: "'sample_dag'"
         - comma: ","
         - select_clause_element:
-            literal: "'sample_dag__run_id'"
+            quoted_literal: "'sample_dag__run_id'"
         - comma: ","
         - select_clause_element:
-            literal: "'2006-06-13 08:30:00+00:00'"
+            quoted_literal: "'2006-06-13 08:30:00+00:00'"
         - comma: ","
         - select_clause_element:
-            literal: "'False'"
+            quoted_literal: "'False'"
         - comma: ","
         - select_clause_element:
-            literal: "'2006-06-13 08:30:00+00:00'"
+            quoted_literal: "'2006-06-13 08:30:00+00:00'"
         - comma: ","
         - select_clause_element:
-            literal: "'2006-06-14 08:30:00+00:00'"
+            quoted_literal: "'2006-06-14 08:30:00+00:00'"
         - comma: ","
         - select_clause_element:
-            literal: "'2006-06-14'"
+            quoted_literal: "'2006-06-14'"
         - comma: ","
         - select_clause_element:
-            literal: "'20060614'"
+            quoted_literal: "'20060614'"
         - comma: ","
         - select_clause_element:
-            literal: "'2006-06-12 08:30:00+00:00'"
+            quoted_literal: "'2006-06-12 08:30:00+00:00'"
         - comma: ","
         - select_clause_element:
-            literal: "'2006-06-12'"
+            quoted_literal: "'2006-06-12'"
         - comma: ","
         - select_clause_element:
-            literal: "'20060612'"
+            quoted_literal: "'20060612'"
         - comma: ","
         - select_clause_element:
-            literal: "'2006-06-12'"
+            quoted_literal: "'2006-06-12'"
         - comma: ","
         - select_clause_element:
-            literal: "'20060612'"
+            quoted_literal: "'20060612'"
         - comma: ","
         - select_clause_element:
-            literal: "'2006-06-14'"
+            quoted_literal: "'2006-06-14'"
         - comma: ","
         - select_clause_element:
-            literal: "'20060614'"
+            quoted_literal: "'20060614'"
         - comma: ","
         - select_clause_element:
-            literal: "'2006-06-12 08:30:00+00:00'"
+            quoted_literal: "'2006-06-12 08:30:00+00:00'"
