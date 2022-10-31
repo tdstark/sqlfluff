@@ -16,7 +16,8 @@ import pytest
 from jinja2.exceptions import UndefinedError
 
 from sqlfluff.core.errors import SQLFluffSkipFile, SQLTemplaterError
-from sqlfluff.core import FluffConfig, Linter
+
+# from sqlfluff.core import FluffConfig, Linter
 from sqlfluff.core.templaters import JinjaTemplater
 from sqlfluff.core.templaters.base import RawFileSlice, TemplatedFile
 from sqlfluff.core.templaters.jinja import DummyUndefined, JinjaAnalyzer
@@ -610,6 +611,10 @@ def assert_structure(yaml_loader, path, code_only=True, include_meta=False):
         # Test more dbt configurations
         ("jinja_o_config_override_dbt_builtins/override_dbt_builtins", True, False),
         ("jinja_p_disable_dbt_builtins/disable_dbt_builtins", True, False),
+        # Airflow builtins
+        ("jinja_q_airflow_builtins/airflow_builtins_filters", True, False),
+        ("jinja_q_airflow_builtins/airflow_builtins_macros", True, False),
+        ("jinja_q_airflow_builtins/airflow_builtins_variables", True, False),
         # Load all the macros
         ("jinja_q_multiple_path_macros/jinja", True, False),
     ],
